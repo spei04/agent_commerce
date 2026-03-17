@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Commerce — API Reference</title>
+  <meta name="description" content="Agent Commerce API reference: agent spending governance, approvals, and simulated async payments. Includes auth headers, idempotency guidance, and machine-readable OpenAPI/manifest endpoints.">
+  <meta name="robots" content="index,follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #0b0b0e;
+      --bg2:    #111118;
+      --bg3:    #16161c;
+      --bg4:    #1c1c24;
+      --line:   rgba(255,255,255,0.06);
+      --line2:  rgba(255,255,255,0.11);
+      --t1:     #ededf2;
+      --t2:     #8a8997;
+      --t3:     #45434f;
+      --t4:     #2e2c38;
+      --amber:  #e09928;
+      --green:  #3ecf8e;
+      --red:    #e85555;
+      --blue:   #7ba4f0;
+      --purple: #a78bfa;
+      --mono:   'IBM Plex Mono', monospace;
+      --sans:   'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── SHELL ────────────────────────────────────────────────────────────── */
+    .shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: 52px 1fr;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── TOP BAR ──────────────────────────────────────────────────────────── */
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t1);
+      text-decoration: none;
+    }
+    .brand-icon {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid var(--amber);
+      transform: rotate(45deg);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .brand-icon::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      background: var(--amber);
+      opacity: 0.3;
+    }
+
+    .topbar-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--line2);
+    }
+
+    .topbar-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--t3);
+      text-transform: uppercase;
+    }
+
+    .base-url {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t3);
+      background: var(--bg3);
+      border: 1px solid var(--line2);
+      padding: 3px 10px;
+      border-radius: 3px;
+      letter-spacing: 0.02em;
+    }
+    .base-url span { color: var(--t2); }
+
+    /* ── SIDEBAR ──────────────────────────────────────────────────────────── */
+    .sidebar {
+      border-right: 1px solid var(--line);
+      padding: 24px 0;
+      position: sticky;
+      top: 52px;
+      height: calc(100vh - 52px);
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+
+    .nav-group { margin-bottom: 6px; }
+
+    .nav-group-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--t4);
+      padding: 8px 20px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 20px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.03); }
+    .nav-item.active { background: rgba(255,255,255,0.04); }
+    .nav-item.active .nav-path { color: var(--t1); }
+
+    .nav-badge {
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      padding: 1px 5px;
+      flex-shrink: 0;
+      border: 1px solid;
+    }
+    .nav-badge.GET    { color: var(--blue);   border-color: rgba(123,164,240,0.35); }
+    .nav-badge.POST   { color: var(--green);  border-color: rgba(62,207,142,0.35);  }
+    .nav-badge.PATCH  { color: var(--purple); border-color: rgba(167,139,250,0.35); }
+
+    .nav-path {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── CONTENT ──────────────────────────────────────────────────────────── */
+    .content {
+      padding: 40px 52px 80px;
+      max-width: 820px;
+    }
+
+    /* ── SECTION HEADING ─────────────────────────────────────────────────── */
+    .section-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--t3);
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 0;
+    }
+
+    /* ── ENDPOINT ─────────────────────────────────────────────────────────── */
+    .endpoint {
+      padding: 32px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .endpoint:last-child { border-bottom: none; }
+
+    .ep-header {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .method-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border: 1px solid;
+      flex-shrink: 0;
+    }
+    .method-badge.GET    { color: var(--blue);   border-color: rgba(123,164,240,0.4); background: rgba(123,164,240,0.06); }
+    .method-badge.POST   { color: var(--green);  border-color: rgba(62,207,142,0.4);  background: rgba(62,207,142,0.06);  }
+    .method-badge.PATCH  { color: var(--purple); border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.06); }
+
+    .ep-path {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--t1);
+      letter-spacing: -0.01em;
+      overflow-wrap: anywhere;
+    }
+    .ep-path .param { color: var(--t2); }
+
+    .ep-desc {
+      font-size: 13px;
+      color: var(--t2);
+      margin-bottom: 20px;
+      max-width: 560px;
+    }
+
+    /* ── PARAMS TABLE ────────────────────────────────────────────────────── */
+    .params-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 8px;
+    }
+
+    .params {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 22px;
+      table-layout: fixed;
+    }
+    .params td, .params th { overflow-wrap: anywhere; }
+    .params th {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t3);
+      text-align: left;
+      padding: 6px 12px 6px 0;
+      border-bottom: 1px solid var(--line);
+      font-weight: 400;
+    }
+    .params td {
+      padding: 8px 12px 8px 0;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    .params tr:last-child td { border-bottom: none; }
+    .param-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t1);
+    }
+    .param-type {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--amber);
+    }
+    .param-required {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--red);
+      opacity: 0.7;
+    }
+    .param-opt {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t3);
+    }
+    .param-desc {
+      font-size: 12.5px;
+      color: var(--t2);
+    }
+    .param-default {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t3);
+    }
+
+    /* ── CODE BLOCK ──────────────────────────────────────────────────────── */
+    .block-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+
+    .code-wrap {
+      position: relative;
+    }
+
+    pre {
+      background: var(--bg3);
+      border: 1px solid var(--line2);
+      padding: 16px 18px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg4) transparent;
+    }
+    pre::-webkit-scrollbar { height: 4px; }
+    pre::-webkit-scrollbar-thumb { background: var(--bg4); }
+
+    /* JSON syntax highlight classes */
+    .jk { color: var(--t2); }         /* key */
+    .js { color: var(--green); }      /* string value */
+    .jn { color: var(--amber); }      /* number */
+    .jb { color: var(--blue); }       /* boolean / null */
+    .jp { color: var(--t3); }         /* punctuation */
+
+    /* ── RESPONSE STATUS ─────────────────────────────────────────────────── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+    .status-code {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--green);
+      border: 1px solid rgba(62,207,142,0.3);
+      background: rgba(62,207,142,0.06);
+      padding: 2px 8px;
+    }
+    .status-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+
+    /* ── SECTION SEPARATOR ───────────────────────────────────────────────── */
+    .section-gap { height: 56px; }
+
+    /* ── HERO ────────────────────────────────────────────────────────────── */
+    .hero {
+      padding: 40px 0 36px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 40px;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 12px;
+    }
+    .hero-title {
+      font-family: var(--sans);
+      font-size: 26px;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      color: var(--t1);
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .hero-desc {
+      font-size: 14px;
+      color: var(--t2);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* ── LLM / AGENT-FRIENDLY BLOCKS ───────────────────────────────────────── */
+    .llm-block {
+      border: 1px solid var(--line2);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-top: 12px;
+    }
+    .llm-block pre {
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.92);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .recipes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 52px auto 1fr; }
+      .sidebar { position: relative; top: 0; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+      .recipes { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr; }
+      .content { padding: 22px 18px 60px; max-width: 100%; }
+    }
+
+    /* ── CONCEPT CARDS ───────────────────────────────────────────────────── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      margin-bottom: 48px;
+    }
+    .card {
+      background: var(--bg);
+      padding: 24px 22px 22px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    .card:hover { background: var(--bg2); }
+    .card-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t3);
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--t1);
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: 13.5px;
+      color: var(--t2);
+      line-height: 1.6;
+    }
+    .card-link {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--amber);
+      margin-top: 14px;
+      display: block;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── PROTOCOL FLOW ───────────────────────────────────────────────────── */
+    .flow-section {
+      margin-bottom: 52px;
+    }
+    .flow-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 20px;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      gap: 0;
+    }
+    .flow-step {
+      background: var(--bg3);
+      border: 1px solid var(--line2);
+      padding: 16px 14px 14px;
+      position: relative;
+    }
+    .flow-step-num {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t3);
+      margin-bottom: 6px;
+    }
+    .flow-step-name {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--t1);
+      margin-bottom: 4px;
+    }
+    .flow-step-desc {
+      font-size: 10px;
+      color: var(--t2);
+      line-height: 1.5;
+    }
+    .flow-arrow {
+      text-align: center;
+      font-size: 16px;
+      color: var(--t4);
+      padding: 0 2px;
+    }
+    .flow-step.tier-auto  { border-top: 2px solid var(--green);  }
+    .flow-step.tier-appr  { border-top: 2px solid var(--amber);  }
+    .flow-step.tier-block { border-top: 2px solid var(--red);    }
+    .flow-step.tier-core  { border-top: 2px solid var(--blue);   }
+
+    /* ── DEMO ────────────────────────────────────────────────────────────── */
+    .demo-section {
+      border: 1px solid var(--line2);
+      background: var(--bg3);
+      padding: 28px 28px 24px;
+      margin-bottom: 48px;
+    }
+
+    .demo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .demo-title {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--t2);
+    }
+
+    .demo-run {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.07em;
+      color: var(--bg);
+      background: var(--amber);
+      border: none;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .demo-run:hover { opacity: 0.85; }
+    .demo-run:disabled { opacity: 0.4; cursor: default; }
+
+    .demo-agents {
+      display: grid;
+      grid-template-columns: 1fr 60px 1fr;
+      gap: 0;
+      margin-bottom: 20px;
+    }
+
+    .demo-agent {
+      background: var(--bg4);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+
+    .demo-agent-name {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.07em;
+      color: var(--t3);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .demo-agent-id {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--t1);
+      margin-bottom: 10px;
+    }
+
+    .demo-balance {
+      font-family: var(--mono);
+      font-size: 18px;
+      color: var(--amber);
+      transition: color 0.3s;
+    }
+    .demo-balance.depleted { color: var(--t2); }
+
+    .demo-balance-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t3);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .demo-vendor-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .demo-vendor-name {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t3);
+      letter-spacing: 0.06em;
+      text-align: center;
+    }
+
+    .demo-arrow {
+      font-size: 16px;
+      color: var(--t4);
+      transition: color 0.3s;
+      line-height: 1;
+    }
+    .demo-arrow.active { color: var(--amber); }
+    .demo-arrow.blocked-arrow { color: var(--red); }
+
+    /* Terminal log */
+    .demo-log {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.8;
+      min-height: 130px;
+      max-height: 260px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg4) transparent;
+    }
+    .demo-log::-webkit-scrollbar { width: 3px; }
+    .demo-log::-webkit-scrollbar-thumb { background: var(--bg4); }
+
+    .log-line { display: flex; gap: 12px; opacity: 0; animation: logIn 0.2s ease forwards; }
+    @keyframes logIn {
+      from { opacity: 0; transform: translateX(-4px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .log-ts    { color: var(--t3); flex-shrink: 0; }
+    .log-agent { flex-shrink: 0; }
+    .log-agent.a1 { color: var(--blue); }
+    .log-agent.a2 { color: var(--purple); }
+    .log-msg   { color: var(--t2); }
+    .log-ok    { color: var(--green); }
+    .log-block { color: var(--red); }
+    .log-amt   { color: var(--amber); }
+    .log-dim   { color: var(--t3); }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="brand" href="/">
+        <div class="brand-icon"></div>
+        Agent Commerce
+      </a>
+      <div class="topbar-divider"></div>
+      <span class="topbar-label">API Reference</span>
+    </div>
+    <div class="base-url"><span>base url</span> &nbsp;http://localhost:8000</div>
+  </header>
+
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="content" id="content">
+
+    <!-- ── HERO ── -->
+	    <div class="hero">
+	      <div class="hero-eyebrow">Financial Control and Observability for AI Agents</div>
+	      <div class="hero-title">The governance layer<br>for autonomous agent spending.</div>
+	      <div class="hero-desc">Agents can now initiate financial transactions — purchasing datasets, calling paid APIs, buying services from other agents. This platform intercepts every request, enforces spending policies, and records the reasoning behind each decision. Organizations get full visibility and control without removing agent autonomy.</div>
+	    </div>
+
+	    <!-- ── AGENT QUICKSTART ── -->
+		    <div class="flow-section">
+		      <div class="flow-title">Agent Quickstart (Copy/Paste)</div>
+		      <div class="hero-desc" style="margin-top:6px">
+		        Machine-readable metadata: <code style="font-size:10px;color:var(--blue)">GET /.well-known/agent-commerce.json</code> ·
+		        OpenAPI: <code style="font-size:10px;color:var(--blue)">GET /openapi.json</code>
+		      </div>
+		      <div class="llm-block">
+		        <pre>AGENT COMMERCE — INTEGRATION CHEATSHEET
+
+Auth:
+- Admin endpoints: X-Admin-Key (default demo-admin)
+- Agent endpoints: X-Wallet-Key (wallet_key returned ONCE by POST /wallets)
+
+Core flow:
+1) POST /resolve (optional discovery)
+2) POST /purchase with idempotency_key (required for safe retries)
+3) If status=pending_approval: human/admin approves via POST /approvals/{id}/approve
+
+Reliability:
+- Retry by re-sending the same idempotency_key (prevents double-charging / duplicate approvals)
+- Payments settle async: payment_status = processing → succeeded|failed
+- Holds reserve funds: reserved_balance reduces available_balance
+
+Webhooks:
+- Delivery is at-least-once (duplicates possible)
+- Verify: X-Agent-Commerce-Signature = v1=&lt;hex(hmac_sha256(wallet_key, request_body))&gt;
+- Event types: approval_required, payment_succeeded, payment_failed</pre>
+		      </div>
+		      <div class="cards" style="margin-top:12px">
+		        <div class="card" style="cursor:default">
+		          <div class="card-num">A</div>
+		          <div class="card-title">Create Wallet (Admin)</div>
+		          <div class="card-desc"><span style="font-family:var(--mono)">X-Admin-Key</span> required. Response returns <span style="font-family:var(--mono)">wallet_key</span> once.</div>
+		          <div class="code-wrap" style="margin-top:10px"><pre>{
+curl -s -X POST http://localhost:8000/wallets \
+  -H "X-Admin-Key: demo-admin" -H "Content-Type: application/json" \
+  -d '{"agent_id":"my-agent","name":"My Agent","balance":500,"auto_approve_limit":50,"spend_limit_max":300,"allowed_vendors":[]}'
+}</pre></div>
+	        </div>
+	        <div class="card" style="cursor:default">
+	          <div class="card-num">B</div>
+	          <div class="card-title">Purchase (Agent)</div>
+	          <div class="card-desc"><span style="font-family:var(--mono)">X-Wallet-Key</span> required. Always send <span style="font-family:var(--mono)">idempotency_key</span>.</div>
+	          <div class="code-wrap" style="margin-top:10px"><pre>{
+curl -s -X POST http://localhost:8000/purchase \
+  -H "X-Wallet-Key: &lt;wallet_key&gt;" -H "Content-Type: application/json" \
+  -d '{"wallet_id":"&lt;wallet_id&gt;","product_id":"&lt;product_id&gt;","quantity":1,"intent":"order supplies","idempotency_key":"&lt;uuid&gt;"}'
+}</pre></div>
+	        </div>
+	        <div class="card" style="cursor:default">
+	          <div class="card-num">C</div>
+	          <div class="card-title">Approve (Human/Admin)</div>
+	          <div class="card-desc">Approvals are snapshot decisions: approve exactly what was requested. Settlement happens async.</div>
+	          <div class="code-wrap" style="margin-top:10px"><pre>{
+curl -s -X POST http://localhost:8000/approvals/&lt;approval_id&gt;/approve \
+  -H "X-Admin-Key: demo-admin" -H "Content-Type: application/json" -d '{}'
+}</pre></div>
+	        </div>
+	      </div>
+	      <div class="hero-desc" style="margin-top:12px">
+	        Payments are simulated async: <span style="font-family:var(--mono)">payment_status</span> transitions <span style="font-family:var(--mono)">processing → succeeded|failed</span>.
+	        Wallets expose <span style="font-family:var(--mono)">reserved_balance</span> and <span style="font-family:var(--mono)">available_balance</span>.
+	      </div>
+	    </div>
+
+	    <!-- ── RELIABILITY NOTES ── -->
+		    <div class="flow-section">
+		      <div class="flow-title">Agent Reliability Notes</div>
+		      <div class="hero-desc" style="margin-top:6px">
+		        Always retry safely with <span style="font-family:var(--mono)">idempotency_key</span>. Treat webhooks as at-least-once (duplicates happen).
+		      </div>
+	      <div class="cards" style="margin-top:12px">
+	        <div class="card" style="cursor:default">
+	          <div class="card-num">R</div>
+	          <div class="card-title">Idempotency</div>
+	          <div class="card-desc">On network errors/timeouts, re-send the same <span style="font-family:var(--mono)">idempotency_key</span> and return the existing transaction/approval.</div>
+	          <div class="code-wrap" style="margin-top:10px"><pre>{
+// Pseudocode
+key = uuid()
+try purchase(key)
+catch retry purchase(key)  // same key
+}</pre></div>
+	        </div>
+	        <div class="card" style="cursor:default">
+	          <div class="card-num">W</div>
+	          <div class="card-title">Webhook Signature</div>
+	          <div class="card-desc">Verify <span style="font-family:var(--mono)">X-Agent-Commerce-Signature</span> using HMAC-SHA256 with the wallet key as the secret.</div>
+	          <div class="code-wrap" style="margin-top:10px"><pre>{
+signature = "v1=" + hex(hmac_sha256(secret=wallet_key, message=request_body))
+}</pre></div>
+	        </div>
+	        <div class="card" style="cursor:default">
+	          <div class="card-num">S</div>
+	          <div class="card-title">Settlement</div>
+	          <div class="card-desc">A successful purchase returns immediately with <span style="font-family:var(--mono)">payment_status=processing</span>. Poll <span style="font-family:var(--mono)">GET /transactions</span> or rely on webhooks for completion.</div>
+	        </div>
+		      </div>
+		    </div>
+
+		    <!-- ── RECIPES ── -->
+		    <div class="flow-section">
+		      <div class="flow-title">Integration Recipes</div>
+		      <div class="hero-desc" style="margin-top:6px">Short patterns agents can follow without reading the whole API.</div>
+		      <div class="recipes">
+		        <div class="card" style="cursor:default">
+		          <div class="card-num">1</div>
+		          <div class="card-title">Purchase With Retry</div>
+		          <div class="card-desc">Generate a UUID once. Reuse it on any retry until you get a definitive response.</div>
+		          <div class="code-wrap" style="margin-top:10px"><pre>{
+idempotency_key = uuid()
+resp = POST /purchase { ..., idempotency_key }
+if network_error: retry POST /purchase with SAME idempotency_key
+}</pre></div>
+		        </div>
+		        <div class="card" style="cursor:default">
+		          <div class="card-num">2</div>
+		          <div class="card-title">Handle Pending Approval</div>
+		          <div class="card-desc">Treat pending_approval as a final state for the agent; a human continues the workflow.</div>
+		          <div class="code-wrap" style="margin-top:10px"><pre>{
+resp = POST /purchase ...
+if resp.status == "pending_approval":
+  approval_id = resp.approval_request_id
+  notify human + wait for webhook(payment_succeeded|failed) or poll /transactions
+}</pre></div>
+		        </div>
+		        <div class="card" style="cursor:default">
+		          <div class="card-num">3</div>
+		          <div class="card-title">Wait For Settlement</div>
+		          <div class="card-desc">Both auto-approved and approved-by-human settle asynchronously. Poll or use webhooks.</div>
+		          <div class="code-wrap" style="margin-top:10px"><pre>{
+txn = POST /purchase ...
+while txn.payment_status == "processing":
+  sleep(0.5s)
+  txn = GET /transactions?wallet_id=... (find txn.id)
+}</pre></div>
+		        </div>
+		        <div class="card" style="cursor:default">
+		          <div class="card-num">4</div>
+		          <div class="card-title">Verify Webhook</div>
+		          <div class="card-desc">Webhooks are at-least-once. Verify signature, then dedupe by event id.</div>
+		          <div class="code-wrap" style="margin-top:10px"><pre>{
+raw = request_body
+sig = header["X-Agent-Commerce-Signature"]
+assert sig == "v1=" + hex(hmac_sha256(wallet_key, raw))
+event = json(raw)
+dedupe(event.id)
+}</pre></div>
+		        </div>
+		      </div>
+		    </div>
+
+		    <!-- ── CONCEPT CARDS ── -->
+		    <div class="cards">
+	      <a class="card" href="#POST-wallets">
+	        <div class="card-num">01</div>
+        <div class="card-title">Govern</div>
+        <div class="card-desc">Give every agent a programmable wallet. Define per-transaction limits, vendor allowlists, and approval thresholds. Policies enforce automatically on every purchase attempt.</div>
+        <span class="card-link">Wallet API →</span>
+      </a>
+      <a class="card" href="#GET-transactions">
+        <div class="card-num">02</div>
+        <div class="card-title">Observe</div>
+        <div class="card-desc">Every transaction is logged with the agent's intent, the triggering task, and the policy decision. Real-time dashboard surfaces spend by agent, vendor, and category.</div>
+        <span class="card-link">Transaction log →</span>
+      </a>
+      <a class="card" href="#GET-approvals">
+        <div class="card-num">03</div>
+        <div class="card-title">Audit</div>
+        <div class="card-desc">Mid-range transactions route to a human approval queue before executing. All decisions — auto-approved, pending, rejected — are retained as a tamper-evident audit trail.</div>
+        <span class="card-link">Approvals →</span>
+      </a>
+    </div>
+
+    <!-- ── POLICY FLOW ── -->
+	    <div class="flow-section">
+	      <div class="flow-title">Policy Engine — Three-Tier Decision Model</div>
+	      <div class="flow">
+	        <div class="flow-step tier-core">
+	          <div class="flow-step-num">01</div>
+	          <div class="flow-step-name">Request</div>
+	          <div class="flow-step-desc">Agent calls <code style="font-size:9px;color:var(--blue)">POST /purchase</code> with vendor, amount, and intent.</div>
+	        </div>
+	        <div class="flow-arrow">→</div>
+	        <div class="flow-step tier-core">
+	          <div class="flow-step-num">02</div>
+	          <div class="flow-step-name">Policy Check</div>
+	          <div class="flow-step-desc">Vendor allowlist, balance, and threshold evaluated in order.</div>
+	        </div>
+	        <div class="flow-arrow">→</div>
+	        <div class="flow" style="display:flex;flex-direction:column;gap:6px;grid-column:span 1">
+	          <div class="flow-step tier-auto" style="flex:1">
+	            <div class="flow-step-num" style="color:var(--green)">auto</div>
+	            <div class="flow-step-name" style="color:var(--green)">Approved</div>
+	            <div class="flow-step-desc">Below auto-approve limit. Reserves funds and starts simulated settlement (<span style="font-family:var(--mono)">payment_status=processing</span>).</div>
+	          </div>
+	          <div class="flow-step tier-appr" style="flex:1">
+	            <div class="flow-step-num" style="color:var(--amber)">review</div>
+	            <div class="flow-step-name" style="color:var(--amber)">Pending</div>
+	            <div class="flow-step-desc">Between thresholds. Funds reserved; queued for human approval. On approve, settlement begins.</div>
+	          </div>
+	          <div class="flow-step tier-block" style="flex:1">
+	            <div class="flow-step-num" style="color:var(--red)">hard</div>
+	            <div class="flow-step-name" style="color:var(--red)">Blocked</div>
+	            <div class="flow-step-desc">Exceeds hard ceiling or not in allowlist. Logged and rejected.</div>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
+
+    <!-- ── INTERACTIVE DEMO ── -->
+    <div class="demo-section">
+      <div class="demo-header">
+        <span class="demo-title">Live Demo &mdash; Two agents, one vendor</span>
+        <button class="demo-run" id="demo-btn" onclick="runDemo()">&#9654; Run</button>
+      </div>
+
+      <div class="demo-agents">
+        <div class="demo-agent">
+          <div class="demo-agent-name">Agent A</div>
+          <div class="demo-agent-id">procurement-agent</div>
+          <div class="demo-balance" id="d-bal-a">$500.00</div>
+          <div class="demo-balance-label">balance</div>
+        </div>
+        <div class="demo-vendor-col">
+          <div class="demo-arrow" id="d-arrow-a">↑</div>
+          <div class="demo-vendor-name">uline.com</div>
+          <div class="demo-arrow" id="d-arrow-b">↑</div>
+        </div>
+        <div class="demo-agent">
+          <div class="demo-agent-name">Agent B</div>
+          <div class="demo-agent-id">travel-agent</div>
+          <div class="demo-balance" id="d-bal-b">$800.00</div>
+          <div class="demo-balance-label">balance</div>
+        </div>
+      </div>
+
+      <div class="demo-log" id="demo-log">
+        <div class="log-line" style="opacity:1">
+          <span class="log-ts">--:--:--</span>
+          <span class="log-dim">ready. press run to begin.</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+  // ── Data ──────────────────────────────────────────────────────────────────
+	  const API = [
+	    {
+	      group: 'Auth',
+	      endpoints: [
+	        {
+	          method: '—', path: 'Headers',
+	          desc: 'MVP auth is header-based. Admin endpoints require X-Admin-Key. Agent endpoints require X-Wallet-Key (returned once on wallet creation).',
+	          response: {
+	            'X-Admin-Key': 'demo-admin',
+	            'X-Wallet-Key': '<wallet_key>',
+	            'AGENT_COMMERCE_ADMIN_KEY': '(env var to change admin key)',
+	          },
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Wallets',
+	      endpoints: [
+	        {
+	          method: 'POST', path: '/wallets',
+	          desc: 'Register a new agent wallet. Each agent gets one wallet identified by a unique agent_id.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          body: {
+	            agent_id: 'research-agent-01',
+	            name: 'Research Agent',
+	            balance: 500.0,
+	            auto_approve_limit: 30.0,
+	            spend_limit_max: 200.0,
+	            daily_limit: 0.0,
+	            weekly_limit: 0.0,
+	            velocity_max_txn: 0,
+	            allowed_vendors: [],
+	            webhook_url: 'https://example.com/webhook',
+	          },
+	          bodyParams: [
+	            { name: 'agent_id',           type: 'string',  req: true,  desc: 'Unique identifier for the agent.' },
+	            { name: 'name',               type: 'string',  req: true,  desc: 'Human-readable label.' },
+	            { name: 'balance',            type: 'float',   req: false, def: '100.0',  desc: 'Starting balance.' },
+	            { name: 'auto_approve_limit', type: 'float',   req: false, def: '20.0',   desc: 'Below this → auto-approve instantly.' },
+	            { name: 'spend_limit_max',    type: 'float',   req: false, def: '100.0',  desc: 'Above this → hard block. Between the two limits → requires human approval.' },
+	            { name: 'daily_limit',        type: 'float',   req: false, def: '0.0',    desc: 'Rolling 24h cap on approved spend (0 = disabled).' },
+	            { name: 'weekly_limit',       type: 'float',   req: false, def: '0.0',    desc: 'Rolling 7d cap on approved spend (0 = disabled).' },
+	            { name: 'velocity_max_txn',   type: 'int',     req: false, def: '0',      desc: 'Max approved txns per 60s (0 = disabled). Breach auto-suspends.' },
+	            { name: 'allowed_vendors',    type: 'string[]',req: false, def: '[]',     desc: 'Vendor allowlist. Empty array permits all vendors.' },
+	            { name: 'webhook_url',        type: 'string',  req: false, desc: 'Destination for approval/payment webhooks (at-least-once).' },
+	          ],
+	          response: { id: 'f3a1...', agent_id: 'research-agent-01', name: 'Research Agent', balance: 500.0, reserved_balance: 0.0, available_balance: 500.0, auto_approve_limit: 30.0, spend_limit_max: 200.0, allowed_vendors: [], wallet_key: 'wk_live_...', created_at: '2026-03-12T14:22:01' },
+	        },
+	        {
+	          method: 'GET', path: '/wallets',
+	          desc: 'List all registered agent wallets.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          response: [{ id: 'f3a1...', agent_id: 'research-agent-01', balance: 482.35, reserved_balance: 10.00, available_balance: 472.35, auto_approve_limit: 30.0, spend_limit_max: 200.0 }],
+	        },
+	        {
+	          method: 'GET', path: '/wallets/{wallet_id}',
+	          desc: 'Get a single wallet by ID, including current balance.',
+	          headers: [
+	            { name: 'X-Admin-Key',  type: 'string', req: false, desc: 'Admin access.' },
+	            { name: 'X-Wallet-Key', type: 'string', req: false, desc: 'Wallet access (required if not using X-Admin-Key).' },
+	          ],
+	          pathParams: [{ name: 'wallet_id', type: 'string', desc: 'Wallet UUID.' }],
+	          response: { id: 'f3a1...', agent_id: 'research-agent-01', name: 'Research Agent', balance: 482.35, reserved_balance: 10.00, available_balance: 472.35, auto_approve_limit: 30.0, spend_limit_max: 200.0, allowed_vendors: [], created_at: '2026-03-12T14:22:01' },
+	        },
+	        {
+	          method: 'PATCH', path: '/wallets/{wallet_id}',
+	          desc: 'Update wallet policy settings. All fields are optional.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          pathParams: [{ name: 'wallet_id', type: 'string', desc: 'Wallet UUID.' }],
+	          body: { auto_approve_limit: 50.0, spend_limit_max: 300.0, daily_limit: 200.0, allowed_vendors: ['openai.com', 'aws.com'] },
+	          response: { id: 'f3a1...', agent_id: 'research-agent-01', balance: 482.35, auto_approve_limit: 50.0, spend_limit_max: 300.0, daily_limit: 200.0, allowed_vendors: ['openai.com', 'aws.com'] },
+	        },
+	        {
+	          method: 'POST', path: '/wallets/{wallet_id}/topup',
+	          desc: 'Add funds to a wallet.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          pathParams: [{ name: 'wallet_id', type: 'string', desc: 'Wallet UUID.' }],
+	          body: { amount: 250.0 },
+	          bodyParams: [{ name: 'amount', type: 'float', req: true, desc: 'Amount to credit.' }],
+	          response: { balance: 732.35 },
+	        },
+	        {
+	          method: 'POST', path: '/wallets/{wallet_id}/rotate_key',
+	          desc: 'Rotate the wallet key and return the new one (admin only).',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          pathParams: [{ name: 'wallet_id', type: 'string', desc: 'Wallet UUID.' }],
+	          response: { wallet_id: 'f3a1...', wallet_key: 'wk_live_...' },
+	        },
+	        {
+	          method: 'POST', path: '/wallets/{wallet_id}/unsuspend',
+	          desc: 'Restore a suspended wallet.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          pathParams: [{ name: 'wallet_id', type: 'string', desc: 'Wallet UUID.' }],
+	          response: { id: 'f3a1...', status: 'active' },
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Products',
+	      endpoints: [
+	        {
+	          method: 'POST', path: '/products',
+	          desc: 'Register a product in the merchant catalog. Products are the purchasable units agents discover through intent resolution.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          body: {
+	            vendor_name: 'openai.com',
+	            name: 'GPT-4 Inference',
+            description: 'GPT-4 API call, per 1k tokens',
+            price: 0.02,
+            min_order: 1,
+            lead_time_days: 0,
+            tags: ['ai', 'llm', 'inference'],
+          },
+          bodyParams: [
+            { name: 'vendor_name',    type: 'string',  req: true,  desc: 'Vendor identifier used in policy checks.' },
+            { name: 'name',           type: 'string',  req: true,  desc: 'Product name.' },
+            { name: 'description',    type: 'string',  req: false, desc: 'Used in intent matching.' },
+            { name: 'price',          type: 'float',   req: true,  desc: 'Unit price.' },
+            { name: 'min_order',      type: 'int',     req: false, def: '1', desc: 'Minimum purchasable quantity.' },
+            { name: 'lead_time_days', type: 'int',     req: false, def: '1', desc: 'Fulfillment time. Used as soft constraint in intent resolution.' },
+            { name: 'tags',           type: 'string[]',req: false, def: '[]', desc: 'Keywords matched against agent intents.' },
+          ],
+          response: { id: 'b7c2...', vendor_name: 'openai.com', name: 'GPT-4 Inference', price: 0.02, min_order: 1, lead_time_days: 0, tags: ['ai', 'llm', 'inference'] },
+        },
+        {
+          method: 'GET', path: '/products',
+          desc: 'List the full merchant catalog.',
+          response: [{ id: 'b7c2...', vendor_name: 'openai.com', name: 'GPT-4 Inference', price: 0.02, tags: ['ai', 'llm', 'inference'] }],
+        },
+      ],
+    },
+	    {
+	      group: 'Resolve',
+	      endpoints: [
+	        {
+	          method: 'POST', path: '/resolve',
+	          desc: 'Submit a natural-language intent and receive a ranked list of matching products. Set auto_buy: true to immediately purchase the top match.',
+	          headers: [
+	            { name: 'X-Wallet-Key', type: 'string', req: true, desc: 'Wallet key for the provided wallet_id.' },
+	          ],
+	          body: {
+	            wallet_id: 'f3a1...',
+	            intent: 'cheapest option for summarizing documents with an LLM',
+            budget: 1.00,
+            constraints: { delivery_days: 1 },
+            auto_buy: false,
+            quantity: 1,
+          },
+          bodyParams: [
+            { name: 'wallet_id',   type: 'string', req: true,  desc: 'Wallet initiating the intent.' },
+            { name: 'intent',      type: 'string', req: true,  desc: 'Natural-language description of what the agent needs.' },
+            { name: 'budget',      type: 'float',  req: false, desc: 'Hard per-unit price ceiling. Products above this are excluded.' },
+            { name: 'constraints', type: 'object', req: false, desc: 'Soft constraints. Supports delivery_days.' },
+            { name: 'auto_buy',    type: 'bool',   req: false, def: 'false', desc: 'If true, purchases the top-ranked match immediately.' },
+            { name: 'quantity',    type: 'int',    req: false, def: '1',     desc: 'Quantity to purchase when auto_buy is true.' },
+          ],
+          response: {
+            matches: [
+              { product_id: 'b7c2...', vendor_name: 'openai.com', name: 'GPT-4 Inference', price: 0.02, score: 6.5 },
+              { product_id: 'c4d8...', vendor_name: 'anthropic.com', name: 'Claude API Call', price: 0.015, score: 5.9 },
+            ],
+            intent_log_id: 'e9f1...',
+          },
+        },
+      ],
+    },
+	    {
+	      group: 'Purchase',
+	      endpoints: [
+	        {
+	          method: 'POST', path: '/purchase',
+	          desc: 'Buy a product directly by ID. Returns approved, blocked, or pending_approval. Successful purchases settle asynchronously via a simulated payment processor.',
+	          headers: [
+	            { name: 'X-Wallet-Key', type: 'string', req: true, desc: 'Wallet key for the provided wallet_id.' },
+	          ],
+	          body: {
+	            wallet_id: 'f3a1...',
+	            product_id: 'b7c2...',
+	            quantity: 10,
+	            intent: 'summarize quarterly earnings reports',
+	            idempotency_key: 'f5b2b2d8-...',
+	          },
+	          bodyParams: [
+	            { name: 'wallet_id',  type: 'string', req: true,  desc: 'Wallet funding the purchase.' },
+	            { name: 'product_id', type: 'string', req: true,  desc: 'Product UUID from the catalog.' },
+	            { name: 'quantity',   type: 'int',    req: false, def: '1', desc: 'Units to purchase. Total = price × quantity.' },
+	            { name: 'intent',     type: 'string', req: false, desc: 'Intent that triggered this purchase. Stored for audit.' },
+	            { name: 'idempotency_key', type: 'string', req: false, desc: 'Reuse on retries to prevent double-charging.' },
+	            { name: 'simulate_outcome', type: 'string', req: false, desc: 'Demo-only: succeed|fail|requires_action.' },
+	          ],
+	          response: { id: 'd2e9...', agent_id: 'research-agent-01', vendor_name: 'openai.com', product_name: 'GPT-4 Inference', amount: 0.20, quantity: 10, status: 'approved', payment_status: 'processing', payment_intent_id: 'pi_...', reason: 'within policy', created_at: '2026-03-12T14:23:45' },
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Approvals',
+	      endpoints: [
+	        {
+	          method: 'GET', path: '/approvals',
+	          desc: 'List approval requests. Defaults to pending only. These are transactions in the middle policy tier awaiting human review.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          queryParams: [
+	            { name: 'status', type: 'string', desc: 'Filter by status: pending, approved, or rejected.', def: 'pending' },
+	          ],
+	          response: [{ id: 'r1a2...', agent_id: 'procurement-agent', vendor_name: 'cdw.com', product_name: 'MacBook Pro 14" M3', amount: 1999.00, quantity: 1, intent: 'provision laptop for new hire', status: 'pending', created_at: '2026-03-12T14:20:00' }],
+	        },
+	        {
+	          method: 'POST', path: '/approvals/{approval_id}/approve',
+	          desc: 'Approve a pending request (admin). Approval is a snapshot decision: it executes exactly what was requested and starts async settlement. Balance is captured on settlement.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          pathParams: [{ name: 'approval_id', type: 'string', desc: 'ApprovalRequest UUID.' }],
+	          body: { note: 'confirmed with manager — within Q4 headcount budget' },
+	          bodyParams: [{ name: 'note', type: 'string', req: false, desc: 'Optional reviewer note stored on the approval record.' }],
+	          response: { approved: true, transaction: { id: 'd2e9...', status: 'approved', payment_status: 'processing', payment_intent_id: 'pi_...', amount: 1999.00, vendor_name: 'cdw.com' } },
+	        },
+	        {
+	          method: 'POST', path: '/approvals/{approval_id}/reject',
+	          desc: 'Reject a pending request. Logs a blocked transaction for the audit trail. Balance is unchanged.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          pathParams: [{ name: 'approval_id', type: 'string', desc: 'ApprovalRequest UUID.' }],
+	          body: { note: 'use existing inventory — request deferred to Q1' },
+	          bodyParams: [{ name: 'note', type: 'string', req: false, desc: 'Reason for rejection, stored on both the approval and transaction records.' }],
+	          response: { rejected: true, transaction: { id: 'e3f1...', status: 'blocked', reason: 'rejected by reviewer: use existing inventory' } },
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Payments (Simulated)',
+	      endpoints: [
+	        {
+	          method: 'POST', path: '/simulate/tick',
+	          desc: 'Advance simulated payment settlement and webhook delivery (demo only).',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          response: { settled: 2, webhooks_sent: 1 },
+	        },
+	        {
+	          method: 'GET', path: '/payments/intents',
+	          desc: 'List recent simulated payment intents.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          queryParams: [{ name: 'limit', type: 'int', desc: 'Max results to return.', def: '50' }],
+	          response: [{ id: 'pi_...', wallet_id: 'f3a1...', transaction_id: 'd2e9...', amount: 0.20, status: 'succeeded', failure_code: null }],
+	        },
+	        {
+	          method: 'GET', path: '/payments/webhooks',
+	          desc: 'List webhook outbox delivery attempts.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          queryParams: [{ name: 'limit', type: 'int', desc: 'Max results to return.', def: '50' }],
+	          response: [{ id: 'we_...', event_type: 'payment_succeeded', status: 'sent', attempts: 1 }],
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Transactions',
+	      endpoints: [
+	        {
+	          method: 'GET', path: '/transactions',
+	          desc: 'Retrieve the transaction log. Filterable by wallet and status.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: false, desc: 'Required if wallet_id is omitted.' },
+	            { name: 'X-Wallet-Key', type: 'string', req: false, desc: 'Required if querying by wallet_id without admin access.' },
+	          ],
+	          queryParams: [
+	            { name: 'wallet_id', type: 'string', desc: 'Filter to a single agent wallet.' },
+	            { name: 'status',    type: 'string', desc: 'Filter by status: approved or blocked.' },
+	            { name: 'limit',     type: 'int',    desc: 'Max results to return.', def: '50' },
+	          ],
+	          response: [{ id: 'd2e9...', agent_id: 'research-agent-01', vendor_name: 'openai.com', amount: 0.20, status: 'approved', intent: 'summarize quarterly earnings reports', created_at: '2026-03-12T14:23:45' }],
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Intents',
+	      endpoints: [
+	        {
+	          method: 'GET', path: '/intents',
+	          desc: 'Retrieve the intent resolution log — every call to /resolve, with match counts and timestamps.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          queryParams: [
+	            { name: 'limit', type: 'int', desc: 'Max results to return.', def: '20' },
+	          ],
+	          response: [{ id: 'e9f1...', agent_id: 'research-agent-01', raw_intent: 'cheapest option for summarizing documents with an LLM', matched_count: 2, created_at: '2026-03-12T14:23:10' }],
+	        },
+	      ],
+	    },
+	    {
+	      group: 'Dashboard',
+	      endpoints: [
+	        {
+	          method: 'GET', path: '/dashboard/summary',
+	          desc: 'Aggregated metrics: total volume, per-agent spend breakdown, top vendors, success rate.',
+	          headers: [
+	            { name: 'X-Admin-Key', type: 'string', req: true, desc: 'Admin key (defaults to demo-admin).' },
+	          ],
+	          response: {
+	            total_volume: 116.97,
+	            total_transactions: 15,
+	            approved_count: 13,
+            blocked_count: 2,
+            success_rate: 86.7,
+            active_agents: 3,
+            agents: { 'research-agent-01': { approved: 5, blocked: 0, volume: 2.72 } },
+            top_vendors: [{ vendor: 'packright.com', volume: 105.48 }],
+          },
+        },
+      ],
+    },
+  ];
+
+  // ── Syntax highlight ──────────────────────────────────────────────────────
+  function highlight(obj) {
+    const raw = JSON.stringify(obj, null, 2);
+    return raw
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/("[\w_]+")\s*:/g, '<span class="jk">$1</span>:')
+      .replace(/: ("(?:[^"\\]|\\.)*")/g, ': <span class="js">$1</span>')
+      .replace(/: (-?\d+\.?\d*)/g, ': <span class="jn">$1</span>')
+      .replace(/: (true|false|null)/g, ': <span class="jb">$1</span>')
+      .replace(/(\[|\]|\{|\})/g, '<span class="jp">$1</span>');
+  }
+
+  // ── Slug ──────────────────────────────────────────────────────────────────
+  function slug(method, path) {
+    return (method + path).replace(/[^a-zA-Z0-9]/g, '-');
+  }
+
+  // ── Format path with param styling ───────────────────────────────────────
+  function fmtPath(path) {
+    return path.replace(/(\{[\w_]+\})/g, '<span class="param">$1</span>');
+  }
+
+  // ── Render sidebar ────────────────────────────────────────────────────────
+  const sidebar = document.getElementById('sidebar');
+  const content = document.getElementById('content');
+
+  API.forEach(({ group, endpoints }) => {
+    const div = document.createElement('div');
+    div.className = 'nav-group';
+    div.innerHTML = `<div class="nav-group-title">${group}</div>` +
+      endpoints.map(ep => `
+        <a class="nav-item" href="#${slug(ep.method, ep.path)}">
+          <span class="nav-badge ${ep.method}">${ep.method}</span>
+          <span class="nav-path">${ep.path}</span>
+        </a>
+      `).join('');
+    sidebar.appendChild(div);
+  });
+
+  // ── Render content ────────────────────────────────────────────────────────
+	  API.forEach(({ group, endpoints }, gi) => {
+	    const section = document.createElement('div');
+
+    section.innerHTML = `<div class="section-title">${group}</div>`;
+
+    endpoints.forEach(ep => {
+      const id = slug(ep.method, ep.path);
+      let html = `<div class="endpoint" id="${id}">`;
+
+      // Header
+	      html += `
+	        <div class="ep-header">
+	          <span class="method-badge ${ep.method}">${ep.method}</span>
+	          <span class="ep-path">${fmtPath(ep.path)}</span>
+	        </div>
+	        <div class="ep-desc">${ep.desc}</div>
+	      `;
+
+	      // Headers
+	      if (ep.headers?.length) {
+	        html += `<div class="params-label">Request headers</div>
+	          <table class="params">
+	            <thead><tr><th>name</th><th>type</th><th style="width:52px"></th><th>description</th></tr></thead>
+	            <tbody>` +
+	          ep.headers.map(h => `
+	            <tr>
+	              <td><span class="param-name">${h.name}</span></td>
+	              <td><span class="param-type">${h.type}</span></td>
+	              <td>${h.req ? '<span class="param-required">req</span>' : '<span class="param-opt">opt</span>'}</td>
+	              <td>
+	                <span class="param-desc">${h.desc}</span>
+	                ${h.def ? `<span class="param-default"> · default ${h.def}</span>` : ''}
+	              </td>
+	            </tr>`).join('') +
+	          `</tbody></table>`;
+	      }
+
+      // Path params
+      if (ep.pathParams?.length) {
+        html += `<div class="params-label">Path parameters</div>
+          <table class="params">
+            <thead><tr><th>name</th><th>type</th><th>description</th></tr></thead>
+            <tbody>` +
+          ep.pathParams.map(p => `
+            <tr>
+              <td><span class="param-name">${p.name}</span></td>
+              <td><span class="param-type">${p.type}</span></td>
+              <td><span class="param-desc">${p.desc}</span></td>
+            </tr>`).join('') +
+          `</tbody></table>`;
+      }
+
+      // Query params
+      if (ep.queryParams?.length) {
+        html += `<div class="params-label">Query parameters</div>
+          <table class="params">
+            <thead><tr><th>name</th><th>type</th><th style="width:44px"></th><th>description</th></tr></thead>
+            <tbody>` +
+          ep.queryParams.map(p => `
+            <tr>
+              <td><span class="param-name">${p.name}</span></td>
+              <td><span class="param-type">${p.type}</span></td>
+              <td><span class="param-opt">opt</span></td>
+              <td>
+                <span class="param-desc">${p.desc}</span>
+                ${p.def ? `<span class="param-default"> · default ${p.def}</span>` : ''}
+              </td>
+            </tr>`).join('') +
+          `</tbody></table>`;
+      }
+
+      // Body params
+      if (ep.bodyParams?.length) {
+        html += `<div class="params-label">Request body</div>
+          <table class="params">
+            <thead><tr><th>field</th><th>type</th><th style="width:52px"></th><th>description</th></tr></thead>
+            <tbody>` +
+          ep.bodyParams.map(p => `
+            <tr>
+              <td><span class="param-name">${p.name}</span></td>
+              <td><span class="param-type">${p.type}</span></td>
+              <td>${p.req ? '<span class="param-required">req</span>' : '<span class="param-opt">opt</span>'}</td>
+              <td>
+                <span class="param-desc">${p.desc}</span>
+                ${p.def ? `<span class="param-default"> · default ${p.def}</span>` : ''}
+              </td>
+            </tr>`).join('') +
+          `</tbody></table>`;
+      }
+
+      // Body example
+      if (ep.body) {
+        html += `
+          <div class="block-label">Example request body</div>
+          <div class="code-wrap"><pre>${highlight(ep.body)}</pre></div>
+        `;
+      }
+
+      // Response
+      if (ep.response !== undefined) {
+        html += `
+          <div class="status-row">
+            <span class="status-code">200</span>
+            <span class="status-label">Response</span>
+          </div>
+          <div class="code-wrap"><pre>${highlight(ep.response)}</pre></div>
+        `;
+      }
+
+      html += `</div>`;
+      section.innerHTML += html;
+    });
+
+    if (gi < API.length - 1) section.innerHTML += '<div class="section-gap"></div>';
+    content.appendChild(section);
+  });
+
+  // ── Active nav on scroll ──────────────────────────────────────────────────
+  const navItems = document.querySelectorAll('.nav-item');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(n => n.classList.remove('active'));
+        const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  document.querySelectorAll('.endpoint[id]').forEach(el => observer.observe(el));
+
+  // ── Interactive Demo ──────────────────────────────────────────────────────
+  function fmt(n) {
+    return '$' + Number(n).toFixed(2);
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function nowTs() {
+    const d = new Date();
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  function addLog(agentClass, agentLabel, msg, extraClass = '') {
+    const log = document.getElementById('demo-log');
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `
+      <span class="log-ts">${nowTs()}</span>
+      ${agentLabel ? `<span class="log-agent ${agentClass}">${agentLabel}</span>` : ''}
+      <span class="log-msg ${extraClass}">${msg}</span>
+    `;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function setArrow(id, state) {
+    const el = document.getElementById(id);
+    el.classList.remove('active', 'blocked-arrow');
+    if (state === 'active')  el.classList.add('active');
+    if (state === 'blocked') el.classList.add('blocked-arrow');
+  }
+
+  function setBalance(id, val, depleted = false) {
+    const el = document.getElementById(id);
+    el.textContent = fmt(val);
+    el.classList.toggle('depleted', depleted);
+  }
+
+  const SCENARIO = [
+    {
+      delay: 400,
+      fn: async () => {
+        addLog('', '', '<span class="log-dim">── simulation start ──────────────────</span>');
+      }
+    },
+    // Agent A: procurement-agent triggered by low inventory alert
+    {
+      delay: 700,
+      fn: async () => {
+        addLog('a1', 'procurement-agent', 'trigger: inventory alert — corrugated boxes at 4% stock');
+      }
+    },
+    {
+      delay: 800,
+      fn: async () => {
+        addLog('a1', 'procurement-agent', 'resolving intent: <span class="log-amt">"reorder shipping boxes, same supplier, 200-ct"</span>');
+      }
+    },
+    {
+      delay: 900,
+      fn: async () => {
+        addLog('a1', 'procurement-agent', '→ /resolve  matched <span class="log-ok">3 products</span>  top: Corrugated Boxes 200-ct @ $189.00  · lead time 2d');
+      }
+    },
+    {
+      delay: 800,
+      fn: async () => {
+        addLog('a1', 'procurement-agent', 'executing purchase  qty 1  total <span class="log-amt">$189.00</span>');
+        setArrow('d-arrow-a', 'active');
+      }
+    },
+    {
+      delay: 1000,
+      fn: async () => {
+        addLog('a1', 'procurement-agent', '→ /purchase  policy check...  <span class="log-ok">approved</span>  within policy · delegated auth confirmed', 'log-ok');
+        setArrow('d-arrow-a', '');
+        setBalance('d-bal-a', 311.00);
+      }
+    },
+    {
+      delay: 600,
+      fn: async () => {
+        addLog('a1', 'procurement-agent', 'order confirmed  delivery est. <span class="log-dim">Oct 16 · PO #8841 logged</span>');
+      }
+    },
+    // Agent B: travel-agent books for team offsite
+    {
+      delay: 1000,
+      fn: async () => {
+        addLog('', '', '<span class="log-dim">──────────────────────────────────────</span>');
+        addLog('a2', 'travel-agent', 'trigger: calendar event — team offsite NYC, Nov 4–6, 4 attendees');
+      }
+    },
+    {
+      delay: 800,
+      fn: async () => {
+        addLog('a2', 'travel-agent', 'resolving intent: <span class="log-amt">"book hotel Midtown Manhattan 3 nights, 4 rooms, under $350/night"</span>');
+      }
+    },
+    {
+      delay: 900,
+      fn: async () => {
+        addLog('a2', 'travel-agent', '→ /resolve  matched <span class="log-ok">2 products</span>  top: Hotel Midtown 3 nights @ $1,260.00/room');
+      }
+    },
+    {
+      delay: 800,
+      fn: async () => {
+        addLog('a2', 'travel-agent', 'executing purchase  qty 4  total <span class="log-amt">$5,040.00</span>');
+        setArrow('d-arrow-b', 'active');
+      }
+    },
+    {
+      delay: 900,
+      fn: async () => {
+        setArrow('d-arrow-b', 'blocked');
+        addLog('a2', 'travel-agent', '→ /purchase  policy check...  <span class="log-block">blocked</span>  $5,040.00 exceeds per-transaction limit of $2,000.00', 'log-block');
+      }
+    },
+    {
+      delay: 700,
+      fn: async () => {
+        setArrow('d-arrow-b', '');
+        addLog('a2', 'travel-agent', 'splitting order — booking 2 rooms per transaction to stay within policy...');
+      }
+    },
+    {
+      delay: 900,
+      fn: async () => {
+        addLog('a2', 'travel-agent', 'executing purchase  qty 2  total <span class="log-amt">$2,520.00</span>  (rooms 1–2)');
+        setArrow('d-arrow-b', 'active');
+      }
+    },
+    {
+      delay: 900,
+      fn: async () => {
+        setArrow('d-arrow-b', '');
+        addLog('a2', 'travel-agent', '→ /purchase  <span class="log-ok">approved</span>  confirmation #HT-44821', 'log-ok');
+        setBalance('d-bal-b', 800.00 - 2520.00 < 0 ? 0 : 800.00);
+        setBalance('d-bal-b', 800.00);
+      }
+    },
+    {
+      delay: 500,
+      fn: async () => {
+        addLog('a2', 'travel-agent', 'executing purchase  qty 2  total <span class="log-amt">$2,520.00</span>  (rooms 3–4)');
+        setArrow('d-arrow-b', 'active');
+      }
+    },
+    {
+      delay: 900,
+      fn: async () => {
+        setArrow('d-arrow-b', '');
+        addLog('a2', 'travel-agent', '→ /purchase  <span class="log-ok">approved</span>  confirmation #HT-44822 · all 4 rooms booked', 'log-ok');
+        setBalance('d-bal-b', 800.00);
+      }
+    },
+    {
+      delay: 800,
+      fn: async () => {
+        addLog('', '', '<span class="log-dim">── simulation complete ────────────────</span>');
+        addLog('', '', '<span class="log-dim">procurement-agent  1 purchase  $189.00  · 0 blocked</span>');
+        addLog('', '', '<span class="log-dim">travel-agent  3 attempts  $5,040.00 fulfilled  · 1 blocked (split resolved)</span>');
+      }
+    },
+  ];
+
+  let demoRunning = false;
+
+  async function runDemo() {
+    if (demoRunning) return;
+    demoRunning = true;
+    const btn = document.getElementById('demo-btn');
+    btn.disabled = true;
+
+    // Reset
+    document.getElementById('demo-log').innerHTML = '';
+    setBalance('d-bal-a', 200.00);
+    setBalance('d-bal-b', 40.00);
+    setArrow('d-arrow-a', '');
+    setArrow('d-arrow-b', '');
+
+    for (const step of SCENARIO) {
+      await sleep(step.delay);
+      await step.fn();
+    }
+
+    demoRunning = false;
+    btn.disabled = false;
+    btn.textContent = '↺ Replay';
+  }
+</script>
+</body>
+</html>

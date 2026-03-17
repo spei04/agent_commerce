@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Commerce — Live Policy Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0b0b0e;
+      --bg2:      #111118;
+      --bg3:      #18181f;
+      --line:     rgba(255,255,255,0.06);
+      --line-hi:  rgba(255,255,255,0.12);
+      --t1:       #ededf2;
+      --t2:       #8a8997;
+      --t3:       #45434f;
+      --amber:    #e09928;
+      --green:    #3ecf8e;
+      --red:      #e85555;
+      --blue:     #7ba4f0;
+      --mono:     'IBM Plex Mono', monospace;
+      --sans:     'Inter', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #root {
+      position: relative;
+      z-index: 1;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0 28px 60px;
+    }
+
+    /* ── TOPBAR ── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bar-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t1);
+      user-select: none;
+    }
+
+    .brand-icon {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--amber);
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+    .brand-icon::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      background: var(--amber);
+      opacity: 0.35;
+    }
+
+    .bar-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--line-hi);
+    }
+
+    .bar-subtitle {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.09em;
+      color: var(--t3);
+      text-transform: uppercase;
+    }
+
+    .bar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid var(--line-hi);
+      background: var(--bg2);
+      color: var(--t2);
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .btn:hover { border-color: var(--amber); color: var(--amber); }
+    .btn-amber {
+      border-color: var(--amber);
+      color: var(--amber);
+      background: rgba(224,153,40,0.07);
+    }
+    .btn-amber:hover { background: rgba(224,153,40,0.14); }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      display: grid;
+      grid-template-columns: 35% 1fr;
+      gap: 0;
+      min-height: calc(100vh - 90px);
+      padding-top: 24px;
+    }
+
+    .left-col {
+      padding-right: 28px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .right-col {
+      padding-left: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── PANEL ── */
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    /* ── AGENT CARDS ── */
+    .agent-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--t1);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    .status-active  { background: rgba(62,207,142,0.12); color: var(--green); border: 1px solid rgba(62,207,142,0.25); }
+    .status-suspended { background: rgba(232,85,85,0.12); color: var(--red); border: 1px solid rgba(232,85,85,0.25); }
+    .status-review  { background: rgba(224,153,40,0.12); color: var(--amber); border: 1px solid rgba(224,153,40,0.25); }
+
+    .agent-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-item {
+      background: var(--bg3);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 8px 10px;
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 3px;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--t1);
+    }
+    .stat-value.amber { color: var(--amber); }
+    .stat-value.green { color: var(--green); }
+
+    .vendors-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .vendor-tag {
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: rgba(123,164,240,0.1);
+      color: var(--blue);
+      border: 1px solid rgba(123,164,240,0.2);
+    }
+
+    /* ── SCENARIO GRID ── */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .scenario-btn {
+      background: var(--bg2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+    .scenario-btn:hover {
+      border-color: var(--amber);
+      background: rgba(224,153,40,0.04);
+    }
+    .scenario-btn.active {
+      border-color: var(--amber);
+      background: rgba(224,153,40,0.08);
+    }
+    .scenario-btn.loading {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .scenario-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--t1);
+      margin-bottom: 4px;
+    }
+
+    .scenario-sub {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t2);
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .outcome-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+    .tag-approve  { background: rgba(62,207,142,0.12); color: var(--green); border: 1px solid rgba(62,207,142,0.25); }
+    .tag-pending  { background: rgba(224,153,40,0.12); color: var(--amber); border: 1px solid rgba(224,153,40,0.25); }
+    .tag-blocked  { background: rgba(232,85,85,0.12); color: var(--red); border: 1px solid rgba(232,85,85,0.25); }
+
+    /* ── TRACE PANEL ── */
+    #trace-panel {
+      min-height: 200px;
+    }
+
+    #trace-body {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-height: 120px;
+    }
+
+    .trace-empty {
+      color: var(--t3);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .trace-row {
+      display: grid;
+      grid-template-columns: 18px 140px 1fr;
+      gap: 10px;
+      align-items: baseline;
+      padding: 6px 10px;
+      border-radius: 4px;
+      background: var(--bg3);
+      border: 1px solid var(--line);
+      animation: slideIn 0.2s ease forwards;
+    }
+
+    .trace-icon {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+    }
+    .trace-icon.pass { color: #22c55e; }
+    .trace-icon.fail { color: #ef4444; }
+
+    .trace-check {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+    .trace-check.pass { color: var(--amber); }
+    .trace-check.fail { color: #f87171; }
+
+    .trace-detail {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t2);
+    }
+    .trace-row.fail .trace-detail { color: var(--t1); }
+
+    .outcome-banner {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-align: center;
+      animation: slideIn 0.25s ease forwards;
+    }
+    .outcome-banner.approved { background: rgba(62,207,142,0.1); color: var(--green); border: 1px solid rgba(62,207,142,0.3); }
+    .outcome-banner.pending  { background: rgba(224,153,40,0.1);  color: var(--amber); border: 1px solid rgba(224,153,40,0.3); }
+    .outcome-banner.blocked  { background: rgba(232,85,85,0.1);   color: var(--red);   border: 1px solid rgba(232,85,85,0.3); }
+
+    /* ── APPROVAL QUEUE ── */
+    #approval-queue-wrap {
+      display: none;
+    }
+
+    .queue-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg3);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      margin-bottom: 7px;
+      animation: slideIn 0.2s ease forwards;
+    }
+
+    .queue-item-info { flex: 1; }
+    .queue-item-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--t1);
+      margin-bottom: 2px;
+    }
+    .queue-item-meta {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t2);
+    }
+
+    .queue-actions {
+      display: flex;
+      gap: 6px;
+      margin-left: 12px;
+    }
+
+    .btn-approve {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid rgba(62,207,142,0.3);
+      background: rgba(62,207,142,0.08);
+      color: var(--green);
+      transition: background 0.15s;
+    }
+    .btn-approve:hover { background: rgba(62,207,142,0.16); }
+
+    .btn-reject {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid rgba(232,85,85,0.3);
+      background: rgba(232,85,85,0.08);
+      color: var(--red);
+      transition: background 0.15s;
+    }
+    .btn-reject:hover { background: rgba(232,85,85,0.16); }
+
+    /* ── EVENT LOG ── */
+    #log-body {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #log-body::-webkit-scrollbar { width: 4px; }
+    #log-body::-webkit-scrollbar-track { background: transparent; }
+    #log-body::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 2px; }
+
+    .log-entry {
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      overflow: hidden;
+      cursor: pointer;
+      animation: slideIn 0.2s ease forwards;
+    }
+    .log-entry:hover { border-color: var(--line-hi); }
+
+    .log-summary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      background: var(--bg3);
+    }
+
+    .log-ts {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t3);
+      min-width: 58px;
+    }
+
+    .log-method {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--amber);
+      font-weight: 500;
+    }
+
+    .log-path {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t2);
+      flex: 1;
+    }
+
+    .log-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+    .log-badge.approved { background: rgba(62,207,142,0.12); color: var(--green); }
+    .log-badge.pending  { background: rgba(224,153,40,0.12);  color: var(--amber); }
+    .log-badge.blocked  { background: rgba(232,85,85,0.12);   color: var(--red);   }
+    .log-badge.request  { background: rgba(123,164,240,0.1);  color: var(--blue);  }
+    .log-badge.ms       { background: transparent; color: var(--t3); }
+
+    .log-detail {
+      display: none;
+      padding: 10px;
+      background: #0d0d12;
+      border-top: 1px solid var(--line);
+    }
+    .log-detail.open { display: block; }
+
+    .log-json {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t2);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-empty {
+      color: var(--t3);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 10px;
+    }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid var(--t3);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="root">
+
+  <!-- TOPBAR -->
+  <div class="bar">
+    <div class="bar-left">
+      <div class="brand">
+        <div class="brand-icon"></div>
+        Agent Commerce
+      </div>
+      <div class="bar-sep"></div>
+      <div class="bar-subtitle">Live Policy Demo</div>
+    </div>
+    <div class="bar-right">
+      <a href="/" class="btn">&#8592; Dashboard</a>
+      <button class="btn btn-amber" onclick="resetEnv()">Reset Environment</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+
+      <!-- Procurement Agent Card -->
+      <div>
+        <div class="section-label">Procurement Agent</div>
+        <div class="panel" id="card-procurement">
+          <div class="panel-body">
+            <div class="agent-name">
+              <span id="proc-name">Loading...</span>
+              <span class="status-badge status-active" id="proc-status">active</span>
+            </div>
+            <div class="agent-stats">
+              <div class="stat-item">
+                <div class="stat-label">Balance</div>
+                <div class="stat-value green" id="proc-balance">—</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Auto-Approve</div>
+                <div class="stat-value" id="proc-auto">—</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Hard Ceiling</div>
+                <div class="stat-value amber" id="proc-ceil">—</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Daily Limit</div>
+                <div class="stat-value" id="proc-daily">—</div>
+              </div>
+              <div class="stat-item" style="grid-column: span 2;">
+                <div class="stat-label">Velocity Limit</div>
+                <div class="stat-value" id="proc-velocity">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Research Agent Card -->
+      <div>
+        <div class="section-label">Research Agent</div>
+        <div class="panel" id="card-research">
+          <div class="panel-body">
+            <div class="agent-name">
+              <span id="res-name">Loading...</span>
+              <span class="status-badge status-active" id="res-status">active</span>
+            </div>
+            <div class="agent-stats">
+              <div class="stat-item">
+                <div class="stat-label">Balance</div>
+                <div class="stat-value green" id="res-balance">—</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Auto-Approve</div>
+                <div class="stat-value" id="res-auto">—</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Hard Ceiling</div>
+                <div class="stat-value amber" id="res-ceil">—</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Weekly Limit</div>
+                <div class="stat-value" id="res-weekly">—</div>
+              </div>
+            </div>
+            <div class="vendors-list" id="res-vendors"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approval Queue -->
+      <div id="approval-queue-wrap">
+        <div class="section-label">Approval Queue</div>
+        <div class="panel">
+          <div class="panel-body" id="approval-queue-body">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+
+      <!-- Scenario Buttons -->
+      <div>
+        <div class="section-label">Scenarios</div>
+        <div class="scenario-grid">
+          <button class="scenario-btn" id="btn-auto_approve" onclick="runScenario('auto_approve')">
+            <div class="scenario-title">Auto-Approve</div>
+            <div class="scenario-sub">procurement-agent · $8.00</div>
+            <span class="outcome-tag tag-approve">Auto-Approve</span>
+          </button>
+          <button class="scenario-btn" id="btn-approval_required" onclick="runScenario('approval_required')">
+            <div class="scenario-title">Approval Queue</div>
+            <div class="scenario-sub">research-agent · $45.00</div>
+            <span class="outcome-tag tag-pending">Pending Review</span>
+          </button>
+          <button class="scenario-btn" id="btn-hard_block" onclick="runScenario('hard_block')">
+            <div class="scenario-title">Hard Block</div>
+            <div class="scenario-sub">procurement-agent · $320.00</div>
+            <span class="outcome-tag tag-blocked">Blocked</span>
+          </button>
+          <button class="scenario-btn" id="btn-vendor_blocked" onclick="runScenario('vendor_blocked')">
+            <div class="scenario-title">Vendor Block</div>
+            <div class="scenario-sub">research-agent · unauthorized vendor</div>
+            <span class="outcome-tag tag-blocked">Blocked</span>
+          </button>
+          <button class="scenario-btn" id="btn-daily_limit" onclick="runScenario('daily_limit')">
+            <div class="scenario-title">Daily Limit</div>
+            <div class="scenario-sub">procurement-agent · 3×$30 budget window</div>
+            <span class="outcome-tag tag-blocked">Budget Exhausted</span>
+          </button>
+          <button class="scenario-btn" id="btn-velocity" onclick="runScenario('velocity')">
+            <div class="scenario-title">Velocity Breach</div>
+            <div class="scenario-sub">procurement-agent · 4 rapid purchases</div>
+            <span class="outcome-tag tag-blocked">Auto-Suspended</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Policy Trace -->
+      <div>
+        <div class="section-label">Policy Evaluation Trace</div>
+        <div class="panel" id="trace-panel">
+          <div class="panel-header">
+            <span class="panel-title">Step-by-step check results</span>
+            <span id="trace-status" style="font-family: var(--mono); font-size: 9px; color: var(--t3);"></span>
+          </div>
+          <div class="panel-body">
+            <div id="trace-body">
+              <div class="trace-empty">Run a scenario to see policy evaluation trace</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Log -->
+      <div>
+        <div class="section-label">Event Log</div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">API requests &amp; responses</span>
+            <button class="btn" onclick="clearLog()" style="padding: 3px 10px; font-size: 9px;">Clear</button>
+          </div>
+          <div class="panel-body" style="padding: 10px;">
+            <div id="log-body">
+              <div class="log-empty" id="log-empty">No events yet — run a scenario</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const ADMIN_KEY = 'demo-admin';
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let walletIds = {};
+  let walletKeys = {};
+  let productIds = {};
+  let pendingApprovals = [];
+  let isRunning = false;
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const res = await fetch('/demo/reset', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const data = await res.json();
+      walletIds = data.wallets;
+      walletKeys = data.wallet_keys || {};
+      productIds = data.products;
+      await refreshAgentCards();
+      await loadPendingApprovals();
+      // Advance simulated settlement + webhook delivery periodically.
+      setInterval(() => {
+        fetch('/simulate/tick', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } }).catch(() => {});
+      }, 750);
+    } catch (e) {
+      console.error('Init failed', e);
+    }
+  }
+
+  async function resetEnv() {
+    if (isRunning) return;
+    pendingApprovals = [];
+    renderApprovalQueue();
+    clearLog();
+    clearTrace();
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    try {
+      const res = await fetch('/demo/reset', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const data = await res.json();
+      walletIds = data.wallets;
+      walletKeys = data.wallet_keys || {};
+      productIds = data.products;
+      await refreshAgentCards();
+      await loadPendingApprovals();
+    } catch (e) {
+      console.error('Reset failed', e);
+    }
+  }
+
+  async function loadPendingApprovals() {
+    try {
+      const res = await fetch('/approvals?status=pending', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      if (!res.ok) return;
+      const items = await res.json();
+      // Only show approvals for demo wallets
+      const demoWalletIdSet = new Set(Object.values(walletIds));
+      pendingApprovals = items.filter(i => demoWalletIdSet.has(i.wallet_id));
+      renderApprovalQueue();
+    } catch (e) {}
+  }
+
+  // ── Agent Cards ────────────────────────────────────────────────────────────
+  async function refreshAgentCards() {
+    if (!walletIds.procurement || !walletIds.research) return;
+    try {
+      const [pw, rw] = await Promise.all([
+        fetch('/wallets/' + walletIds.procurement, { headers: { 'X-Admin-Key': ADMIN_KEY } }).then(r => r.json()),
+        fetch('/wallets/' + walletIds.research, { headers: { 'X-Admin-Key': ADMIN_KEY } }).then(r => r.json()),
+      ]);
+      renderCard('proc', pw);
+      renderCard('res', rw);
+    } catch (e) {
+      console.error('Failed to refresh cards', e);
+    }
+  }
+
+  function renderCard(prefix, w) {
+    const fmt = v => '$' + Number(v).toFixed(2);
+    if (prefix === 'proc') {
+      document.getElementById('proc-name').textContent = w.name;
+      document.getElementById('proc-balance').textContent = fmt(w.balance);
+      document.getElementById('proc-auto').textContent = fmt(w.auto_approve_limit);
+      document.getElementById('proc-ceil').textContent = fmt(w.spend_limit_max);
+      document.getElementById('proc-daily').textContent = w.daily_limit > 0 ? fmt(w.daily_limit) + '/day' : 'none';
+      document.getElementById('proc-velocity').textContent = w.velocity_max_txn > 0 ? w.velocity_max_txn + ' txn / 60s' : 'no limit';
+      updateStatusBadge('proc-status', w.status || 'active');
+    } else {
+      document.getElementById('res-name').textContent = w.name;
+      document.getElementById('res-balance').textContent = fmt(w.balance);
+      document.getElementById('res-auto').textContent = fmt(w.auto_approve_limit);
+      document.getElementById('res-ceil').textContent = fmt(w.spend_limit_max);
+      document.getElementById('res-weekly').textContent = w.weekly_limit > 0 ? fmt(w.weekly_limit) + '/wk' : 'none';
+      updateStatusBadge('res-status', w.status || 'active');
+      const vEl = document.getElementById('res-vendors');
+      const vendors = w.allowed_vendors || [];
+      if (vendors.length > 0) {
+        vEl.innerHTML = vendors.map(v => `<span class="vendor-tag">${v}</span>`).join('');
+      } else {
+        vEl.innerHTML = '<span style="font-family: var(--mono); font-size: 9px; color: var(--t3);">all vendors allowed</span>';
+      }
+    }
+  }
+
+  function updateStatusBadge(elId, status) {
+    const el = document.getElementById(elId);
+    el.textContent = status;
+    el.className = 'status-badge';
+    if (status === 'active') el.classList.add('status-active');
+    else if (status === 'suspended') el.classList.add('status-suspended');
+    else el.classList.add('status-review');
+  }
+
+  // ── Scenarios ─────────────────────────────────────────────────────────────
+  async function runScenario(key) {
+    if (isRunning) return;
+    isRunning = true;
+
+    // Highlight active button
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById('btn-' + key);
+    if (activeBtn) activeBtn.classList.add('active', 'loading');
+
+    clearTrace();
+    clearLog();
+
+    try {
+      switch (key) {
+        case 'auto_approve':
+          await doPurchase('procurement', 'small', 'buying packaging boxes for Q2 fulfillment');
+          break;
+
+        case 'approval_required':
+          await doPurchase('research', 'medium', 'purchasing market intelligence report');
+          break;
+
+        case 'hard_block':
+          await doPurchase('procurement', 'large', 'upgrading server infrastructure');
+          break;
+
+        case 'vendor_blocked':
+          await doPurchase('research', 'restricted', 'sourcing proprietary dataset');
+          break;
+
+        case 'daily_limit':
+          await doPurchase('procurement', 'bulk', 'batch 1 of daily supplies');
+          await sleep(700);
+          await doPurchase('procurement', 'bulk', 'batch 2 of daily supplies');
+          await sleep(700);
+          await doPurchase('procurement', 'bulk', '3rd purchase — budget should be exhausted');
+          break;
+
+        case 'velocity':
+          await doPurchase('procurement', 'fast', 'automated reorder #1');
+          await sleep(180);
+          await doPurchase('procurement', 'fast', 'automated reorder #2');
+          await sleep(180);
+          await doPurchase('procurement', 'fast', 'automated reorder #3');
+          await sleep(180);
+          await doPurchase('procurement', 'fast', 'automated reorder #4');
+          break;
+      }
+    } finally {
+      if (activeBtn) activeBtn.classList.remove('loading');
+      isRunning = false;
+      await refreshAgentCards();
+    }
+  }
+
+  // ── Purchase ───────────────────────────────────────────────────────────────
+  async function doPurchase(agentKey, productKey, intent) {
+    const walletId = walletIds[agentKey];
+    const productId = productIds[productKey];
+    const walletKey = walletKeys[agentKey] || '';
+    if (!walletId || !productId) {
+      console.error('Missing IDs', agentKey, productKey);
+      return null;
+    }
+
+    const body = { wallet_id: walletId, product_id: productId, quantity: 1, intent };
+
+    logRequest('POST', '/purchase', body);
+
+    const t0 = Date.now();
+    let data, statusCode;
+    try {
+      const res = await fetch('/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Wallet-Key': walletKey },
+        body: JSON.stringify(body),
+      });
+      statusCode = res.status;
+      data = await res.json();
+    } catch (e) {
+      logResponse('POST', '/purchase', 0, Date.now() - t0, { error: String(e) });
+      return null;
+    }
+
+    const elapsed = Date.now() - t0;
+    logResponse('POST', '/purchase', statusCode, elapsed, data);
+
+    if (data && data.policy_trace) {
+      const outcome = data.status || (data.status === 'pending_approval' ? 'pending_approval' : (data.status === 'blocked' ? 'blocked' : 'approved'));
+      const finalOutcome = data.status === 'pending_approval' ? 'pending_approval'
+        : (data.status === 'approved' || data.status === undefined) && statusCode === 200 && !data.status ? 'approved'
+        : data.status || 'approved';
+      await animateTrace(data.policy_trace, finalOutcome);
+    }
+
+    if (data && data.status === 'pending_approval') {
+      addApprovalItem({
+        id: data.approval_request_id,
+        product_name: data.product_name,
+        amount: data.amount,
+        vendor_name: data.vendor_name,
+        agent: agentKey,
+      });
+    }
+
+    return data;
+  }
+
+  // ── Trace Animation ────────────────────────────────────────────────────────
+  function clearTrace() {
+    document.getElementById('trace-body').innerHTML = '<div class="trace-empty">Running...</div>';
+    document.getElementById('trace-status').textContent = '';
+  }
+
+  async function animateTrace(trace, outcome) {
+    const body = document.getElementById('trace-body');
+    body.innerHTML = '';
+
+    for (const check of trace) {
+      await sleep(100);
+      const row = document.createElement('div');
+      row.className = 'trace-row ' + (check.passed ? 'pass' : 'fail');
+      row.innerHTML = `
+        <span class="trace-icon ${check.passed ? 'pass' : 'fail'}">${check.passed ? '✓' : '✗'}</span>
+        <span class="trace-check ${check.passed ? 'pass' : 'fail'}">${check.check}</span>
+        <span class="trace-detail">${check.detail}</span>
+      `;
+      body.appendChild(row);
+    }
+
+    await sleep(150);
+    const banner = document.createElement('div');
+
+    if (outcome === 'approved' || outcome === 'auto_approve') {
+      banner.className = 'outcome-banner approved';
+      banner.textContent = 'AUTO-APPROVED';
+    } else if (outcome === 'pending_approval' || outcome === 'requires_approval') {
+      banner.className = 'outcome-banner pending';
+      banner.textContent = 'PENDING APPROVAL — ROUTED TO QUEUE';
+    } else {
+      banner.className = 'outcome-banner blocked';
+      banner.textContent = 'BLOCKED';
+    }
+    body.appendChild(banner);
+  }
+
+  // ── Approval Queue ─────────────────────────────────────────────────────────
+  function addApprovalItem(_item) {
+    // Reload from server to get clean, consistent data
+    loadPendingApprovals();
+  }
+
+  function renderApprovalQueue() {
+    const wrap = document.getElementById('approval-queue-wrap');
+    const body = document.getElementById('approval-queue-body');
+
+    if (pendingApprovals.length === 0) {
+      wrap.style.display = 'none';
+      return;
+    }
+
+    wrap.style.display = 'block';
+    body.innerHTML = '';
+
+    for (const item of pendingApprovals) {
+      const div = document.createElement('div');
+      div.className = 'queue-item';
+      div.id = 'qi-' + item.id;
+      div.innerHTML = `
+        <div class="queue-item-info">
+          <div class="queue-item-name">${item.product_name || 'Unknown Product'}</div>
+          <div class="queue-item-meta">$${Number(item.amount).toFixed(2)} · ${item.vendor_name || ''} · ${item.agent_id || ''}</div>
+        </div>
+        <div class="queue-actions">
+          <button class="btn-approve" onclick="approveItem('${item.id}')">Approve</button>
+          <button class="btn-reject" onclick="rejectItem('${item.id}')">Reject</button>
+        </div>
+      `;
+      body.appendChild(div);
+    }
+  }
+
+  async function approveItem(id) {
+    const path = '/approvals/' + id + '/approve';
+    logRequest('POST', path, {});
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({}),
+      });
+      const status = res.status;
+      const body = await res.json().catch(() => ({}));
+      logResponse('POST', path, status, 0, body);
+      if (!res.ok) return;
+    } catch (e) {}
+    pendingApprovals = pendingApprovals.filter(i => i.id !== id);
+    renderApprovalQueue();
+    await refreshAgentCards();
+  }
+
+  async function rejectItem(id) {
+    const path = '/approvals/' + id + '/reject';
+    logRequest('POST', path, {});
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
+        body: JSON.stringify({}),
+      });
+      const status = res.status;
+      const body = await res.json().catch(() => ({}));
+      logResponse('POST', path, status, 0, body);
+      if (!res.ok) return;
+    } catch (e) {}
+    pendingApprovals = pendingApprovals.filter(i => i.id !== id);
+    renderApprovalQueue();
+  }
+
+  // ── Event Log ──────────────────────────────────────────────────────────────
+  let logEntries = [];
+
+  function clearLog() {
+    logEntries = [];
+    renderLog();
+  }
+
+  function logRequest(method, path, body) {
+    const ts = new Date();
+    const id = 'log-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    logEntries.unshift({ id, type: 'request', ts, method, path, body, response: null, statusCode: null, elapsed: null });
+    renderLog();
+    return id;
+  }
+
+  function logResponse(method, path, statusCode, elapsed, body) {
+    // Update the most recent matching request
+    const entry = logEntries.find(e => e.type === 'request' && e.method === method && e.path === path && !e.statusCode);
+    if (entry) {
+      entry.response = body;
+      entry.statusCode = statusCode;
+      entry.elapsed = elapsed;
+    } else {
+      logEntries.unshift({ id: 'log-r-' + Date.now(), type: 'response', ts: new Date(), method, path, statusCode, elapsed, body });
+    }
+    renderLog();
+  }
+
+  function renderLog() {
+    const body = document.getElementById('log-body');
+    const empty = document.getElementById('log-empty');
+
+    if (logEntries.length === 0) {
+      body.innerHTML = '';
+      body.appendChild(Object.assign(document.createElement('div'), {
+        className: 'log-empty',
+        id: 'log-empty',
+        textContent: 'No events yet — run a scenario',
+      }));
+      return;
+    }
+
+    body.innerHTML = '';
+    for (const entry of logEntries) {
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.id = entry.id;
+
+      let badgeClass = 'request';
+      let badgeText = 'REQ';
+      if (entry.statusCode) {
+        const outcome = getOutcomeFromResponse(entry.response);
+        badgeClass = outcome;
+        badgeText = entry.statusCode;
+      }
+
+      const tsStr = entry.ts.toTimeString().slice(0, 8);
+      const elapsed = entry.elapsed ? `<span class="log-badge ms">${entry.elapsed}ms</span>` : '';
+
+      div.innerHTML = `
+        <div class="log-summary" onclick="toggleLog('${entry.id}')">
+          <span class="log-ts">${tsStr}</span>
+          <span class="log-method">${entry.method}</span>
+          <span class="log-path">${entry.path}</span>
+          ${elapsed}
+          <span class="log-badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="log-detail" id="detail-${entry.id}">
+          <div class="log-json">${formatLogEntry(entry)}</div>
+        </div>
+      `;
+      body.appendChild(div);
+    }
+  }
+
+  function getOutcomeFromResponse(resp) {
+    if (!resp) return 'request';
+    if (resp.status === 'pending_approval') return 'pending';
+    if (resp.status === 'blocked') return 'blocked';
+    if (resp.status === 'approved') return 'approved';
+    if (resp.error) return 'blocked';
+    return 'approved';
+  }
+
+  function formatLogEntry(entry) {
+    const req = JSON.stringify(entry.body, null, 2);
+    const resp = entry.response ? JSON.stringify(entry.response, null, 2) : '(pending)';
+    return `// Request\n${req}\n\n// Response (${entry.statusCode || '?'}, ${entry.elapsed || '?'}ms)\n${resp}`;
+  }
+
+  function toggleLog(id) {
+    const detail = document.getElementById('detail-' + id);
+    if (detail) detail.classList.toggle('open');
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // ── Start ──────────────────────────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>

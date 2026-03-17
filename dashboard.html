@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Commerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0b0b0e;
+      --bg2:      #111118;
+      --bg3:      #18181f;
+      --line:     rgba(255,255,255,0.06);
+      --line-hi:  rgba(255,255,255,0.12);
+      --t1:       #ededf2;
+      --t2:       #8a8997;
+      --t3:       #45434f;
+      --amber:    #e09928;
+      --green:    #3ecf8e;
+      --red:      #e85555;
+      --blue:     #7ba4f0;
+      --mono:     'IBM Plex Mono', monospace;
+      --sans:     'Inter', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Dot grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #root {
+      position: relative;
+      z-index: 1;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 0 28px 60px;
+    }
+
+    /* ── TOPBAR ───────────────────────────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--t1);
+      user-select: none;
+    }
+
+    .brand-icon {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--amber);
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+    .brand-icon::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      background: var(--amber);
+      opacity: 0.35;
+    }
+
+    .bar-right {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .pulse-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.09em;
+      color: var(--t3);
+    }
+    .pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: breathe 2.4s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    #clock {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t3);
+      letter-spacing: 0.05em;
+      min-width: 90px;
+      text-align: right;
+    }
+
+    /* ── METRIC STRIP ─────────────────────── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--line);
+    }
+    .metrics:has(#m-pending-wrap:not([style*="none"])) {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+    .metric {
+      padding: 22px 0 20px;
+    }
+    .metric + .metric {
+      padding-left: 30px;
+      border-left: 1px solid var(--line);
+    }
+
+    .metric-val {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--t1);
+      transition: color 0.4s;
+    }
+    .metric-val.c-amber { color: var(--amber); }
+    .metric-val.c-green { color: var(--green); }
+    .metric-val.c-red   { color: var(--red);   }
+
+    .metric-label {
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--t3);
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      margin-top: 5px;
+    }
+
+    /* ── LAYOUT ───────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      min-height: calc(100vh - 220px);
+    }
+
+    .col {
+      padding: 26px 0;
+    }
+    .col + .col {
+      padding-left: 32px;
+      border-left: 1px solid var(--line);
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-bottom: 14px;
+    }
+
+    .section + .section {
+      margin-top: 36px;
+    }
+
+    /* ── FEED ─────────────────────────────── */
+    #feed {
+      list-style: none;
+    }
+
+    .fi {
+      display: grid;
+      grid-template-columns: 8px 1fr auto;
+      align-items: start;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      animation: drop 0.25s ease;
+    }
+    @keyframes drop {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fi-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .fi-dot.approved { background: var(--green); }
+    .fi-dot.blocked  { background: var(--red);   }
+
+    .fi-main {}
+
+    .fi-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      line-height: 1.3;
+    }
+
+    .fi-agent {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t2);
+    }
+    .fi-sep {
+      color: var(--t3);
+      font-size: 11px;
+    }
+    .fi-vendor {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t1);
+    }
+    .fi-tag {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--red);
+      border: 1px solid rgba(232, 85, 85, 0.4);
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .fi-product {
+      font-size: 11px;
+      color: var(--t2);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 380px;
+    }
+    .fi-intent {
+      font-size: 10px;
+      font-style: italic;
+      color: var(--t3);
+      margin-top: 2px;
+      max-width: 380px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fi-right {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .fi-amount {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--amber);
+    }
+    .fi-amount.blocked {
+      color: var(--red);
+      opacity: 0.55;
+      text-decoration: line-through;
+    }
+    .fi-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t3);
+    }
+
+    /* ── RIGHT COL ────────────────────────── */
+    .agent-item {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .agent-id {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t1);
+      margin-bottom: 6px;
+    }
+    .agent-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .agent-vol {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--amber);
+    }
+    .agent-sub {
+      font-size: 10px;
+      color: var(--t3);
+    }
+    .agent-bar-bg {
+      height: 2px;
+      background: var(--bg3);
+      border-radius: 2px;
+      margin-top: 9px;
+      overflow: hidden;
+    }
+    .agent-bar-fill {
+      height: 100%;
+      background: var(--amber);
+      opacity: 0.5;
+      border-radius: 2px;
+      transition: width 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .vendor-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .vendor-n { font-family: var(--mono); font-size: 11px; color: var(--t2); }
+    .vendor-v { font-family: var(--mono); font-size: 11px; color: var(--t1); }
+
+    /* ── INTENT LOG ───────────────────────── */
+    .intent-item {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .intent-q {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--t2);
+      margin-bottom: 4px;
+    }
+    .intent-q::before, .intent-q::after { content: '"'; color: var(--t3); }
+    .intent-meta {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t3);
+    }
+    .intent-matched {
+      color: var(--blue);
+    }
+
+    /* ── EMPTY ────────────────────────────── */
+    .empty {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t3);
+      padding: 18px 0;
+    }
+
+    /* ── APPROVAL QUEUE ──────────────────────────────────────────────────── */
+    #approval-banner {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+      margin-bottom: 4px;
+    }
+    .appr-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 11px 14px;
+      background: rgba(224, 153, 40, 0.05);
+      border: 1px solid rgba(224, 153, 40, 0.18);
+      margin-bottom: 6px;
+      animation: drop 0.25s ease;
+    }
+    .appr-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .appr-agent  { font-family: var(--mono); font-size: 11px; color: var(--t2); }
+    .appr-arrow  { color: var(--t3); font-size: 11px; }
+    .appr-vendor { font-family: var(--mono); font-size: 11px; color: var(--t1); }
+    .appr-product { font-size: 11px; color: var(--t2); }
+    .appr-intent  { font-size: 10px; font-style: italic; color: var(--t3); margin-top: 2px; }
+    .appr-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .appr-amount { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--amber); margin-right: 4px; }
+    .btn {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
+      border: 1px solid; padding: 4px 12px; cursor: pointer; background: transparent;
+      transition: background 0.15s;
+    }
+    .btn-approve { color: var(--green); border-color: rgba(62,207,142,0.4); }
+    .btn-approve:hover { background: rgba(62,207,142,0.1); }
+    .btn-reject  { color: var(--red);   border-color: rgba(232,85,85,0.3); }
+    .btn-reject:hover  { background: rgba(232,85,85,0.08); }
+
+    /* ── SCROLLABLE FEED ──────────────────── */
+    .feed-wrap {
+      max-height: 520px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--bg3) transparent;
+    }
+    .feed-wrap::-webkit-scrollbar { width: 4px; }
+    .feed-wrap::-webkit-scrollbar-track { background: transparent; }
+    .feed-wrap::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="root">
+
+  <header class="bar">
+    <div class="brand">
+      <div class="brand-icon"></div>
+      Agent Commerce
+    </div>
+    <div class="bar-right">
+      <div class="pulse-wrap">
+        <div class="pulse"></div>
+        LIVE
+      </div>
+      <div id="clock">—</div>
+    </div>
+  </header>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val c-amber" id="m-vol">$0.00</div>
+      <div class="metric-label">Total Volume</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-txns">0</div>
+      <div class="metric-label">Transactions</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-agents">0</div>
+      <div class="metric-label">Active Agents</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val c-green" id="m-rate">—</div>
+      <div class="metric-label">Clear Rate</div>
+    </div>
+    <div class="metric" id="m-pending-wrap" style="display:none">
+      <div class="metric-val c-amber" id="m-pending">0</div>
+      <div class="metric-label">Awaiting Review</div>
+    </div>
+  </div>
+
+  <!-- Approval queue — only visible when there are pending items -->
+  <div id="approval-banner" style="display:none">
+    <div class="section-label" style="padding-top:22px">Pending Approvals</div>
+    <div id="approval-queue"></div>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: feed + intents -->
+    <div class="col">
+      <div class="section">
+        <div class="section-label">Transaction Stream</div>
+        <div class="feed-wrap">
+          <ul id="feed"><li class="empty">Waiting for activity…</li></ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Intent Log</div>
+        <div id="intents"><div class="empty">No intents resolved yet.</div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: agents + vendors -->
+    <div class="col">
+      <div class="section">
+        <div class="section-label">Fleet</div>
+        <div id="agents"><div class="empty">No agents registered.</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Top Vendors</div>
+        <div id="vendors"><div class="empty">No vendor data.</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const ADMIN_KEY = 'demo-admin';
+
+  // ── Clock ────────────────────────────────────────────────────────────────
+  const clockEl = document.getElementById('clock');
+  function tick() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    clockEl.textContent = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function ago(iso) {
+    const s = (Date.now() - new Date(iso + 'Z').getTime()) / 1000;
+    if (s < 5)   return 'just now';
+    if (s < 60)  return `${Math.floor(s)}s ago`;
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    return `${Math.floor(s / 3600)}h ago`;
+  }
+
+  function money(n) {
+    const v = Number(n);
+    if (v < 0.01 && v > 0) return '$' + v.toFixed(6);
+    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function truncate(s, n) {
+    if (!s) return '';
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+
+  function toast(msg) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.style.position = 'fixed';
+      el.style.right = '18px';
+      el.style.bottom = '18px';
+      el.style.padding = '10px 12px';
+      el.style.border = '1px solid rgba(255,255,255,0.12)';
+      el.style.background = 'rgba(15,15,20,0.95)';
+      el.style.color = 'rgba(255,255,255,0.9)';
+      el.style.fontFamily = 'var(--mono)';
+      el.style.fontSize = '10px';
+      el.style.letterSpacing = '0.06em';
+      el.style.borderRadius = '10px';
+      el.style.maxWidth = '360px';
+      el.style.zIndex = '9999';
+      el.style.display = 'none';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.display = 'none'; }, 2600);
+  }
+
+  function ts(minsAgo) {
+    return new Date(Date.now() - minsAgo * 60000).toISOString().replace('Z', '');
+  }
+
+  // ── Mock Approvals ───────────────────────────────────────────────────────
+  // mock=true items render with disabled buttons — replaced by real data on first poll
+  const MOCK_APPROVALS = [
+    { id: 'a1', agent_id: 'procurement-agent', vendor_name: 'cdw.com',      product_name: 'MacBook Pro 14" M3',       amount: 1999.00, quantity: 1, intent: 'provision laptop for new senior engineer — approved in headcount plan', status: 'pending', created_at: ts(0.5),  mock: true },
+    { id: 'a2', agent_id: 'travel-agent',      vendor_name: 'booking.com',  product_name: 'Hotel NYC Midtown 3 nights', amount: 897.00, quantity: 1, intent: 'book accommodation for sales team attending conference Oct 14–17',      status: 'pending', created_at: ts(1.3), mock: true },
+  ];
+
+  function renderApprovals(items) {
+    const banner = document.getElementById('approval-banner');
+    const queue  = document.getElementById('approval-queue');
+    const pending = items.filter(i => i.status === 'pending');
+    if (!pending.length) { banner.style.display = 'none'; return; }
+    banner.style.display = 'block';
+    queue.innerHTML = pending.map(r => `
+      <div class="appr-item" id="appr-${r.id}">
+        <div>
+          <div class="appr-top">
+            <span class="appr-agent">${r.agent_id}</span>
+            <span class="appr-arrow">→</span>
+            <span class="appr-vendor">${r.vendor_name}</span>
+          </div>
+          <div class="appr-product">${truncate(r.product_name, 52)}</div>
+          ${r.intent ? `<div class="appr-intent">${truncate(r.intent, 68)}</div>` : ''}
+        </div>
+        <div class="appr-right">
+          <span class="appr-amount">${money(r.amount)}</span>
+          <button class="btn btn-approve" onclick="actOnApproval('${r.id}','approve')" ${r.mock ? 'disabled style="opacity:0.4;cursor:default"' : ''}>Approve</button>
+          <button class="btn btn-reject"  onclick="actOnApproval('${r.id}','reject')"  ${r.mock ? 'disabled style="opacity:0.4;cursor:default"' : ''}>Reject</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function actOnApproval(id, action) {
+    // Optimistically remove from UI
+    const el = document.getElementById(`appr-${id}`);
+    if (el) el.style.opacity = '0.4';
+    try {
+      const res = await fetch(`/approvals/${id}/${action}`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'X-Admin-Key': ADMIN_KEY},
+        body: '{}'
+      });
+      if (res.ok) {
+        if (el) el.remove();
+        const remaining = document.querySelectorAll('.appr-item');
+        if (!remaining.length) document.getElementById('approval-banner').style.display = 'none';
+        pollFeed(); pollSummary();
+      } else {
+        if (el) el.style.opacity = '1';
+        toast(`Approval failed (HTTP ${res.status}). Check X-Admin-Key.`);
+      }
+    } catch (e) { if (el) el.style.opacity = '1'; }
+  }
+
+  async function pollApprovals() {
+    try {
+      const res = await fetch('/approvals?status=pending', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      if (!res.ok) return;
+      renderApprovals(await res.json());
+    } catch (e) {}
+  }
+
+  // ── Mock Data ─────────────────────────────────────────────────────────────
+  // Agents acting as buyers on behalf of organizations — real goods and services,
+  // not tool/API calls. This is the agentic commerce use case.
+  const MOCK_TRANSACTIONS = [
+    { id: 'm1',  agent_id: 'procurement-agent', vendor_name: 'uline.com',        product_name: 'Corrugated Shipping Boxes 200-ct',   amount: 189.00, quantity: 1,  intent: 'reorder packaging supplies before Q4 inventory deadline',                  status: 'approved', created_at: ts(0.4)  },
+    { id: 'm2',  agent_id: 'inventory-agent',   vendor_name: 'grainger.com',      product_name: 'Industrial Safety Gloves (box/12)',  amount: 64.80,  quantity: 4,  intent: 'restock PPE for warehouse staff — below minimum threshold',                status: 'approved', created_at: ts(1.2)  },
+    { id: 'm3',  agent_id: 'travel-agent',       vendor_name: 'booking.com',       product_name: 'Hotel — NYC Midtown, 3 nights',      amount: 897.00, quantity: 1,  intent: 'book accommodation for sales team attending conference Oct 14–17',         status: 'blocked',  created_at: ts(2.1)  },
+    { id: 'm4',  agent_id: 'procurement-agent', vendor_name: 'staples.com',       product_name: 'Standing Desk (electric, 60")',       amount: 549.00, quantity: 2,  intent: 'purchase standing desks for two new engineering hires starting Monday',    status: 'approved', created_at: ts(4.0)  },
+    { id: 'm5',  agent_id: 'inventory-agent',   vendor_name: 'uline.com',         product_name: 'Bubble Wrap Roll 175ft',              amount: 38.50,  quantity: 6,  intent: 'reorder bubble wrap — fulfillment center stock critically low',            status: 'approved', created_at: ts(6.5)  },
+    { id: 'm6',  agent_id: 'finance-agent',      vendor_name: 'pitchbook.com',     product_name: 'Company Intelligence Report',        amount: 320.00, quantity: 1,  intent: 'purchase due diligence report on acquisition target before board meeting', status: 'approved', created_at: ts(9.0)  },
+    { id: 'm7',  agent_id: 'travel-agent',       vendor_name: 'delta.com',         product_name: 'Flight SFO→JFK round trip',          amount: 412.00, quantity: 2,  intent: 'book cheapest direct flights for two engineers attending AWS re:Invent',    status: 'approved', created_at: ts(12.3) },
+    { id: 'm8',  agent_id: 'procurement-agent', vendor_name: 'cdw.com',           product_name: 'MacBook Pro 14" M3',                 amount: 1999.00,quantity: 1,  intent: 'provision laptop for new senior engineer — approved in headcount plan',    status: 'blocked',  created_at: ts(16.0) },
+    { id: 'm9',  agent_id: 'inventory-agent',   vendor_name: 'grainger.com',      product_name: 'Pallet Stretch Wrap 1500ft',         amount: 94.20,  quantity: 3,  intent: 'restock stretch wrap — 3 pallets ship Friday',                             status: 'approved', created_at: ts(19.5) },
+    { id: 'm10', agent_id: 'finance-agent',      vendor_name: 'morningstar.com',   product_name: 'Equity Research Report Q3',          amount: 175.00, quantity: 1,  intent: 'buy latest equity research on comparable public companies for valuation',   status: 'approved', created_at: ts(24.0) },
+    { id: 'm11', agent_id: 'procurement-agent', vendor_name: 'staples.com',       product_name: 'Office Chair (ergonomic)',            amount: 349.00, quantity: 3,  intent: 'furnish new office floor — 3 desks need chairs before Monday',             status: 'approved', created_at: ts(29.0) },
+    { id: 'm12', agent_id: 'travel-agent',       vendor_name: 'booking.com',       product_name: 'Hotel — London City, 2 nights',      amount: 540.00, quantity: 1,  intent: 'book hotel for founder trip to London — partner meeting confirmed',        status: 'approved', created_at: ts(35.0) },
+    { id: 'm13', agent_id: 'inventory-agent',   vendor_name: 'uline.com',         product_name: 'Poly Mailers 10x13 500-ct',          amount: 52.00,  quantity: 2,  intent: 'reorder poly mailers — peak season surge expected next week',              status: 'approved', created_at: ts(41.0) },
+    { id: 'm14', agent_id: 'finance-agent',      vendor_name: 'pitchbook.com',     product_name: 'Sector Market Map Report',           amount: 320.00, quantity: 1,  intent: 'purchase competitive landscape report for Series B deck',                   status: 'approved', created_at: ts(48.0) },
+    { id: 'm15', agent_id: 'procurement-agent', vendor_name: 'cdw.com',           product_name: '4K Monitor 32" (2-pack)',             amount: 1198.00,quantity: 1,  intent: 'order dual monitors for design team — approved in IT request #4821',      status: 'blocked',  created_at: ts(55.0) },
+  ];
+
+  const MOCK_SUMMARY = {
+    total_volume: 4121.50,
+    total_transactions: 15,
+    approved_count: 12,
+    blocked_count: 3,
+    pending_approvals: 2,
+    success_rate: 80.0,
+    active_agents: 4,
+    agents: {
+      'procurement-agent': { approved: 3, blocked: 2, volume: 1285.50 },
+      'inventory-agent':   { approved: 5, blocked: 0, volume: 474.00  },
+      'travel-agent':      { approved: 2, blocked: 1, volume: 1849.00 },
+      'finance-agent':     { approved: 3, blocked: 0, volume: 815.00  },
+    },
+    top_vendors: [
+      { vendor: 'booking.com',    volume: 1437.00 },
+      { vendor: 'delta.com',      volume: 824.00  },
+      { vendor: 'staples.com',    volume: 1245.00 },
+      { vendor: 'pitchbook.com',  volume: 640.00  },
+      { vendor: 'uline.com',      volume: 279.50  },
+      { vendor: 'grainger.com',   volume: 541.80  },
+    ],
+  };
+
+  const MOCK_INTENTS = [
+    { id: 'i1', agent_id: 'procurement-agent', raw_intent: 'reorder packaging supplies before Q4 inventory deadline',                  matched_count: 4, created_at: ts(0.4)  },
+    { id: 'i2', agent_id: 'inventory-agent',   raw_intent: 'restock PPE for warehouse staff — below minimum threshold',                matched_count: 3, created_at: ts(1.2)  },
+    { id: 'i3', agent_id: 'travel-agent',       raw_intent: 'book accommodation for sales team attending conference Oct 14–17',         matched_count: 2, created_at: ts(2.1)  },
+    { id: 'i4', agent_id: 'procurement-agent', raw_intent: 'purchase standing desks for two new engineering hires starting Monday',    matched_count: 2, created_at: ts(4.0)  },
+    { id: 'i5', agent_id: 'finance-agent',      raw_intent: 'purchase due diligence report on acquisition target before board meeting', matched_count: 2, created_at: ts(9.0)  },
+    { id: 'i6', agent_id: 'travel-agent',       raw_intent: 'book cheapest direct flights for two engineers attending AWS re:Invent',   matched_count: 3, created_at: ts(12.3) },
+    { id: 'i7', agent_id: 'procurement-agent', raw_intent: 'provision laptop for new senior engineer — approved in headcount plan',    matched_count: 1, created_at: ts(16.0) },
+    { id: 'i8', agent_id: 'finance-agent',      raw_intent: 'buy latest equity research on comparable public companies for valuation',  matched_count: 3, created_at: ts(24.0) },
+  ];
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  const seen = new Set();
+
+  function renderFeed(txns) {
+    const feed = document.getElementById('feed');
+    for (const t of [...txns].reverse()) {
+      if (seen.has(t.id)) continue;
+      seen.add(t.id);
+
+      const li = document.createElement('li');
+      li.className = 'fi';
+      li.dataset.id = t.id;
+      li.dataset.ts = t.created_at;
+
+      const blocked = t.status === 'blocked';
+      const product = truncate(t.product_name, 48);
+      const intent  = t.intent ? truncate(t.intent, 55) : '';
+
+      li.innerHTML = `
+        <div class="fi-dot ${t.status}"></div>
+        <div class="fi-main">
+          <div class="fi-top">
+            <span class="fi-agent">${t.agent_id}</span>
+            <span class="fi-sep">→</span>
+            <span class="fi-vendor">${t.vendor_name || '—'}</span>
+            ${blocked ? '<span class="fi-tag">blocked</span>' : ''}
+          </div>
+          ${product ? `<div class="fi-product">${product}</div>` : ''}
+          ${intent  ? `<div class="fi-intent">${intent}</div>` : ''}
+        </div>
+        <div class="fi-right">
+          <span class="fi-amount${blocked ? ' blocked' : ''}">${money(t.amount)}</span>
+          <span class="fi-time" data-ts="${t.created_at}">${ago(t.created_at)}</span>
+        </div>
+      `;
+
+      const empty = feed.querySelector('.empty');
+      if (empty) empty.remove();
+      feed.insertBefore(li, feed.firstChild);
+    }
+
+    feed.querySelectorAll('.fi-time').forEach(el => {
+      el.textContent = ago(el.dataset.ts);
+    });
+
+    const items = feed.querySelectorAll('.fi');
+    if (items.length > 60) {
+      for (let i = 60; i < items.length; i++) items[i].remove();
+    }
+  }
+
+  function renderSummary(d) {
+    document.getElementById('m-vol').textContent    = money(d.total_volume);
+    document.getElementById('m-txns').textContent   = d.total_transactions.toLocaleString();
+    document.getElementById('m-agents').textContent = d.active_agents;
+
+    const rate = d.success_rate;
+    const rateEl = document.getElementById('m-rate');
+    rateEl.textContent = rate + '%';
+    rateEl.className = 'metric-val ' + (rate >= 80 ? 'c-green' : rate >= 50 ? 'c-amber' : 'c-red');
+
+    const pendingWrap = document.getElementById('m-pending-wrap');
+    const pendingCount = d.pending_approvals || 0;
+    if (pendingCount > 0) {
+      document.getElementById('m-pending').textContent = pendingCount;
+      pendingWrap.style.display = '';
+    } else {
+      pendingWrap.style.display = 'none';
+    }
+
+    const agentsEl = document.getElementById('agents');
+    const entries = Object.entries(d.agents).sort((a, b) => b[1].volume - a[1].volume);
+    const maxVol = Math.max(...entries.map(([, a]) => a.volume)) || 1;
+    agentsEl.innerHTML = entries.map(([id, a]) => {
+      const pct = ((a.volume / maxVol) * 100).toFixed(1);
+      return `
+        <div class="agent-item">
+          <div class="agent-id">${id}</div>
+          <div class="agent-row">
+            <span class="agent-vol">${money(a.volume)}</span>
+            <span class="agent-sub">${a.approved} cleared · ${a.blocked} blocked</span>
+          </div>
+          <div class="agent-bar-bg">
+            <div class="agent-bar-fill" style="width:${pct}%"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const vendorsEl = document.getElementById('vendors');
+    vendorsEl.innerHTML = d.top_vendors.map(v => `
+      <div class="vendor-item">
+        <span class="vendor-n">${v.vendor}</span>
+        <span class="vendor-v">${money(v.volume)}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderIntents(items) {
+    const el = document.getElementById('intents');
+    if (!items.length) return;
+    el.innerHTML = items.map(i => `
+      <div class="intent-item">
+        <div class="intent-q">${truncate(i.raw_intent, 72)}</div>
+        <div class="intent-meta">
+          ${i.agent_id}
+          · <span class="intent-matched">${i.matched_count} match${i.matched_count !== 1 ? 'es' : ''}</span>
+          · ${ago(i.created_at)}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Load mock data immediately
+  renderApprovals(MOCK_APPROVALS);
+  renderFeed(MOCK_TRANSACTIONS);
+  renderSummary(MOCK_SUMMARY);
+  renderIntents(MOCK_INTENTS);
+
+  // ── Live Polling (overrides mock when server is up) ───────────────────────
+  async function pollFeed() {
+    try {
+      const res = await fetch('/transactions?limit=50', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      if (!res.ok) return;
+      renderFeed(await res.json());
+    } catch (e) {}
+  }
+
+  async function pollSummary() {
+    try {
+      const res = await fetch('/dashboard/summary', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      if (!res.ok) return;
+      renderSummary(await res.json());
+    } catch (e) {}
+  }
+
+  async function pollIntents() {
+    try {
+      const res = await fetch('/intents?limit=8', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      if (!res.ok) return;
+      const items = await res.json();
+      if (items.length) renderIntents(items);
+    } catch (e) {}
+  }
+
+  // Fire immediately to replace mock data as soon as server responds
+  pollApprovals();
+  pollFeed();
+  pollSummary();
+  pollIntents();
+
+  // Advance simulated settlement + webhook delivery periodically.
+  async function tickSim() {
+    try {
+      await fetch('/simulate/tick', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } });
+    } catch (e) {}
+  }
+
+  setInterval(pollApprovals, 5000);
+  setInterval(pollFeed,     3000);
+  setInterval(pollSummary,  8000);
+  setInterval(pollIntents,  8000);
+  setInterval(tickSim,      1000);
+  setInterval(() => {
+    document.querySelectorAll('.fi-time').forEach(el => {
+      el.textContent = ago(el.dataset.ts);
+    });
+  }, 15000);
+</script>
+</body>
+</html>
