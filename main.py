@@ -978,6 +978,63 @@ def demo_reset(ctx=Depends(require_role("admin")), db: Session = Depends(get_db)
     ))
     db.commit()
 
+    # Seed a couple of transactions so the demo has real data immediately.
+    # 1) Auto-approved procurement purchase (authorized, will capture on next tick).
+    auto_amount = products[0].price_cents  # packright.com $8.00
+    _reserve_or_block(db, w_proc, int(auto_amount), trace=[])
+    t1 = Transaction(
+        id=str(uuid.uuid4()),
+        org_id=org_id,
+        wallet_id=w_proc.id,
+        agent_id=w_proc.agent_id,
+        product_id=products[0].id,
+        vendor_name=products[0].vendor_name,
+        product_name=products[0].name,
+        amount_cents=int(auto_amount),
+        idempotency_key="demo-txn-1",
+        quantity=1,
+        intent="reorder packaging supplies (demo seed)",
+        status="approved",
+        payment_status="processing",
+        reason="within policy",
+        policy_trace=json.dumps([{"check": "demo_seed", "passed": True, "detail": "seeded transaction"}]),
+    )
+    db.add(t1)
+    db.add(BalanceHold(
+        id=str(uuid.uuid4()),
+        org_id=org_id,
+        wallet_id=w_proc.id,
+        amount_cents=int(auto_amount),
+        kind="auth",
+        status="active",
+        transaction_id=t1.id,
+    ))
+    a1 = _rail_authorize(db, w_proc, t1, int(auto_amount), idempotency_key=t1.idempotency_key)
+    t1.payment_ref = a1.id
+    _enqueue_webhook(db, w_proc, "payment.authorization.created", {"authorization_id": a1.id, "transaction_id": t1.id, "amount_cents": int(auto_amount)})
+
+    # 2) Blocked research purchase (vendor not allowed).
+    blocked_amount = products[3].price_cents  # exfil-data.io restricted dataset
+    t2 = Transaction(
+        id=str(uuid.uuid4()),
+        org_id=org_id,
+        wallet_id=w_res.id,
+        agent_id=w_res.agent_id,
+        product_id=products[3].id,
+        vendor_name=products[3].vendor_name,
+        product_name=products[3].name,
+        amount_cents=int(blocked_amount),
+        idempotency_key="demo-txn-2",
+        quantity=1,
+        intent="attempt to purchase restricted dataset (demo seed)",
+        status="blocked",
+        payment_status="not_started",
+        reason="vendor not allowed",
+        policy_trace=json.dumps([{"check": "vendor_allowlist", "passed": False, "detail": "exfil-data.io not in allowlist"}]),
+    )
+    db.add(t2)
+    db.commit()
+
     return {
         "org_id": org_id,
         "agents": {"procurement": _agent_dict(procurement), "research": _agent_dict(research)},

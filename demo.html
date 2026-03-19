@@ -198,6 +198,76 @@
       padding: 16px;
     }
 
+    /* ── LIVE LISTS ── */
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: baseline;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.015);
+      border-radius: 8px;
+      min-width: 0;
+    }
+    .row-main {
+      min-width: 0;
+    }
+    .row-title {
+      font-size: 12px;
+      color: var(--t1);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .row-sub {
+      margin-top: 3px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--t3);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .row-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--line-hi);
+      color: var(--t2);
+      background: rgba(255,255,255,0.02);
+    }
+    .badge.approved { border-color: rgba(62,207,142,0.35); color: var(--green); background: rgba(62,207,142,0.06); }
+    .badge.blocked  { border-color: rgba(232,85,85,0.35);  color: var(--red);   background: rgba(232,85,85,0.06); }
+    .badge.pending  { border-color: rgba(224,153,40,0.35);  color: var(--amber); background: rgba(224,153,40,0.06); }
+    .badge.proc     { border-color: rgba(123,164,240,0.35); color: var(--blue);  background: rgba(123,164,240,0.06); }
+
+    .mono {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t2);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
     /* ── AGENT CARDS ── */
     .agent-name {
       font-size: 13px;
@@ -764,6 +834,22 @@
         </div>
       </div>
 
+      <!-- Live Data -->
+      <div>
+        <div class="section-label">Live Data</div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Recent transactions</span>
+            <span id="live-status" style="font-family: var(--mono); font-size: 9px; color: var(--t3);"></span>
+          </div>
+          <div class="panel-body">
+            <div class="list" id="live-txns">
+              <div class="trace-empty">Loading…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -808,6 +894,7 @@
   let productIds = {};
   let pendingApprovals = [];
   let isRunning = false;
+  let liveTxns = [];
 
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
@@ -828,10 +915,14 @@
       });
       await refreshAgentCards();
       await loadPendingApprovals();
+      await refreshLiveTxns();
       // Advance simulated settlement + webhook delivery periodically.
       setInterval(() => {
         fetchWithAuth('/simulate/tick', { method: 'POST' }).catch(() => {});
       }, 750);
+      setInterval(() => {
+        refreshLiveTxns().catch(() => {});
+      }, 1200);
     } catch (e) {
       console.error('Init failed', e);
     }
@@ -860,9 +951,59 @@
       });
       await refreshAgentCards();
       await loadPendingApprovals();
+      await refreshLiveTxns();
     } catch (e) {
       console.error('Reset failed', e);
     }
+  }
+
+  async function refreshLiveTxns() {
+    const statusEl = document.getElementById('live-status');
+    try {
+      statusEl.textContent = 'polling';
+      const res = await fetchWithAuth('/transactions?limit=25', {});
+      if (!res.ok) {
+        statusEl.textContent = `HTTP ${res.status}`;
+        return;
+      }
+      liveTxns = await res.json();
+      statusEl.textContent = `updated`;
+      renderLiveTxns();
+    } catch (e) {
+      statusEl.textContent = 'offline';
+    }
+  }
+
+  function renderLiveTxns() {
+    const el = document.getElementById('live-txns');
+    if (!el) return;
+    if (!liveTxns || liveTxns.length === 0) {
+      el.innerHTML = '<div class="trace-empty">No transactions yet — run a scenario</div>';
+      return;
+    }
+
+    const fmt = v => '$' + Number(v).toFixed(2);
+    const items = liveTxns.slice(0, 12);
+    el.innerHTML = items.map(t => {
+      const st = t.status || 'approved';
+      const pay = t.payment_status || 'not_started';
+      const right = pay === 'processing' ? 'processing' : (pay === 'succeeded' ? 'succeeded' : pay === 'failed' ? 'failed' : '');
+      const payBadge = pay === 'processing' ? 'badge pending' : (pay === 'succeeded' ? 'badge approved' : (pay === 'failed' ? 'badge blocked' : 'badge'));
+      const statusBadge = st === 'blocked' ? 'badge blocked' : 'badge approved';
+      return `
+        <div class="row">
+          <div class="row-main">
+            <div class="row-title">${escapeHtml(t.product_name || t.vendor_name || 'Transaction')}</div>
+            <div class="row-sub">${escapeHtml(t.agent_id || '')} · ${escapeHtml(t.vendor_name || '')}</div>
+          </div>
+          <div class="row-right">
+            <div class="mono">${fmt(t.amount || 0)}</div>
+            <div class="${statusBadge}">${escapeHtml(st)}</div>
+            ${right ? `<div class="${payBadge}">${escapeHtml(pay)}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   async function loadPendingApprovals() {
@@ -1168,6 +1309,10 @@
       logEntries.unshift({ id: 'log-r-' + Date.now(), type: 'response', ts: new Date(), method, path, statusCode, elapsed, body });
     }
     renderLog();
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
   }
 
   function renderLog() {
