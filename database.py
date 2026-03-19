@@ -1,15 +1,20 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-DATABASE_URL = "sqlite:///./agent_commerce.db"
+# Iteration 2 default: Postgres (run `docker compose up -d`).
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+psycopg2://agent:agent@localhost:5432/agent_commerce",
+)
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False, "timeout": 30},
-    # SQLite MVP: keep default isolation; we rely on atomic UPDATEs for correctness.
-    # For production, move to Postgres and row-level locks.
+    pool_pre_ping=True,
 )
-SessionLocal = sessionmaker(bind=engine)
+
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
 class Base(DeclarativeBase):

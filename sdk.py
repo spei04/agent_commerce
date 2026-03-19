@@ -6,7 +6,7 @@ Minimal client for AI agents to discover and purchase from the platform.
 Usage:
     from sdk import AgentClient, SpendBlocked
 
-    client = AgentClient(wallet_id="...", wallet_key="...", base_url="http://localhost:8000")
+    client = AgentClient(wallet_key="...", base_url="http://localhost:8000")
 
     # Find matches for an intent
     matches = client.find("cheapest cloud storage for datasets", budget=5.00)
@@ -32,8 +32,7 @@ class SpendBlocked(Exception):
 
 
 class AgentClient:
-    def __init__(self, wallet_id: str, wallet_key: str, base_url: str = "http://localhost:8000"):
-        self.wallet_id = wallet_id
+    def __init__(self, wallet_key: str, base_url: str = "http://localhost:8000"):
         self.wallet_key = wallet_key
         self.base_url = base_url.rstrip("/")
 
@@ -52,10 +51,10 @@ class AgentClient:
         """Resolve a natural-language intent to a ranked list of products."""
         constraints = constraints or {}
         resp = requests.post(f"{self.base_url}/resolve", json={
-            "wallet_id": self.wallet_id,
             "intent": intent,
             "budget": budget,
             "constraints": constraints,
+            "limit": limit,
         }, headers=self._headers())
         resp.raise_for_status()
         return resp.json()["matches"]
@@ -68,6 +67,7 @@ class AgentClient:
         quantity: int = 1,
         intent: Optional[str] = None,
         idempotency_key: Optional[str] = None,
+        rail: str = "card",
     ) -> dict:
         """
         Purchase a product directly by ID.
@@ -77,11 +77,11 @@ class AgentClient:
             # Caller should reuse the same key on retries.
             idempotency_key = str(uuid.uuid4())
         resp = requests.post(f"{self.base_url}/purchase", json={
-            "wallet_id": self.wallet_id,
             "product_id": product_id,
             "quantity": quantity,
             "intent": intent,
             "idempotency_key": idempotency_key,
+            "rail": rail,
         }, headers=self._headers())
         resp.raise_for_status()
         txn = resp.json()
@@ -108,13 +108,10 @@ class AgentClient:
     # ── Account ──────────────────────────────────────────────────────────────
 
     def balance(self) -> float:
-        resp = requests.get(f"{self.base_url}/wallets/{self.wallet_id}", headers=self._headers())
-        resp.raise_for_status()
-        return resp.json()["balance"]
+        raise NotImplementedError("Iteration 2: wallet balance is a human/admin concern; agents should receive budgets via orchestration.")
 
     def history(self, limit: int = 20) -> list:
-        resp = requests.get(f"{self.base_url}/transactions", params={
-            "wallet_id": self.wallet_id,
+        resp = requests.get(f"{self.base_url}/agent/transactions", params={
             "limit": limit,
         }, headers=self._headers())
         resp.raise_for_status()

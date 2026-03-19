@@ -514,7 +514,37 @@
 </div>
 
 <script>
-  const ADMIN_KEY = 'demo-admin';
+  const DEMO_EMAIL = 'demo@agentcommerce.local';
+  const DEMO_PASSWORD = 'demo-password';
+  let AUTH_TOKEN = null;
+
+  async function getAuthToken() {
+    if (AUTH_TOKEN) return AUTH_TOKEN;
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+    });
+    if (!res.ok) throw new Error('auth failed');
+    const data = await res.json();
+    AUTH_TOKEN = data.access_token;
+    return AUTH_TOKEN;
+  }
+
+  async function authHeaders(extra = {}) {
+    const t = await getAuthToken();
+    return { ...extra, 'Authorization': 'Bearer ' + t };
+  }
+
+  async function fetchWithAuth(path, init = {}, retry = true) {
+    const headers = await authHeaders(init.headers || {});
+    const res = await fetch(path, { ...init, headers });
+    if (res.status === 401 && retry) {
+      AUTH_TOKEN = null;
+      return fetchWithAuth(path, init, false);
+    }
+    return res;
+  }
 
   // ── Clock ────────────────────────────────────────────────────────────────
   const clockEl = document.getElementById('clock');
@@ -615,9 +645,9 @@
     const el = document.getElementById(`appr-${id}`);
     if (el) el.style.opacity = '0.4';
     try {
-      const res = await fetch(`/approvals/${id}/${action}`, {
+      const res = await fetchWithAuth(`/approvals/${id}/${action}`, {
         method: 'POST',
-        headers: {'Content-Type':'application/json', 'X-Admin-Key': ADMIN_KEY},
+        headers: {'Content-Type':'application/json'},
         body: '{}'
       });
       if (res.ok) {
@@ -627,14 +657,14 @@
         pollFeed(); pollSummary();
       } else {
         if (el) el.style.opacity = '1';
-        toast(`Approval failed (HTTP ${res.status}). Check X-Admin-Key.`);
+        toast(`Approval failed (HTTP ${res.status}). Check your Bearer token / role.`);
       }
     } catch (e) { if (el) el.style.opacity = '1'; }
   }
 
   async function pollApprovals() {
     try {
-      const res = await fetch('/approvals?status=pending', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/approvals?status=pending', {});
       if (!res.ok) return;
       renderApprovals(await res.json());
     } catch (e) {}
@@ -818,7 +848,7 @@
   // ── Live Polling (overrides mock when server is up) ───────────────────────
   async function pollFeed() {
     try {
-      const res = await fetch('/transactions?limit=50', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/transactions?limit=50', {});
       if (!res.ok) return;
       renderFeed(await res.json());
     } catch (e) {}
@@ -826,7 +856,7 @@
 
   async function pollSummary() {
     try {
-      const res = await fetch('/dashboard/summary', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/dashboard/summary', {});
       if (!res.ok) return;
       renderSummary(await res.json());
     } catch (e) {}
@@ -834,7 +864,7 @@
 
   async function pollIntents() {
     try {
-      const res = await fetch('/intents?limit=8', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/intents?limit=8', {});
       if (!res.ok) return;
       const items = await res.json();
       if (items.length) renderIntents(items);
@@ -850,7 +880,7 @@
   // Advance simulated settlement + webhook delivery periodically.
   async function tickSim() {
     try {
-      await fetch('/simulate/tick', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } });
+      await fetchWithAuth('/simulate/tick', { method: 'POST' });
     } catch (e) {}
   }
 

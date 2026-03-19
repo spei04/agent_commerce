@@ -769,7 +769,38 @@
 </div>
 
 <script>
-  const ADMIN_KEY = 'demo-admin';
+  const DEMO_EMAIL = 'demo@agentcommerce.local';
+  const DEMO_PASSWORD = 'demo-password';
+  let AUTH_TOKEN = null;
+
+  async function getAuthToken() {
+    if (AUTH_TOKEN) return AUTH_TOKEN;
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+    });
+    if (!res.ok) throw new Error('auth failed');
+    const data = await res.json();
+    AUTH_TOKEN = data.access_token;
+    return AUTH_TOKEN;
+  }
+
+  async function authHeaders(extra = {}) {
+    const t = await getAuthToken();
+    return { ...extra, 'Authorization': 'Bearer ' + t };
+  }
+
+  async function fetchWithAuth(path, init = {}, retry = true) {
+    const headers = await authHeaders(init.headers || {});
+    const res = await fetch(path, { ...init, headers });
+    if (res.status === 401 && retry) {
+      // Token may be invalid due to server restart / secret change; re-login and retry once.
+      AUTH_TOKEN = null;
+      return fetchWithAuth(path, init, false);
+    }
+    return res;
+  }
 
   // ── State ──────────────────────────────────────────────────────────────────
   let walletIds = {};
@@ -781,16 +812,25 @@
   // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
     try {
-      const res = await fetch('/demo/reset', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/demo/reset', { method: 'POST' });
       const data = await res.json();
-      walletIds = data.wallets;
+      walletIds = { procurement: data.wallets.procurement.id, research: data.wallets.research.id };
       walletKeys = data.wallet_keys || {};
-      productIds = data.products;
+      // Map products by name key for scenarios
+      productIds = {};
+      (data.products || []).forEach(p => {
+        if (p.vendor_name === 'packright.com') productIds.small = p.id;
+        if (p.vendor_name === 'arxiv-reports') productIds.medium = p.id;
+        if (p.vendor_name === 'cloudsoft.io') productIds.large = p.id;
+        if (p.vendor_name === 'exfil-data.io') productIds.restricted = p.id;
+        if (p.vendor_name === 'shipthat.com') productIds.bulk = p.id;
+        if (p.vendor_name === 'cloud-provider.com') productIds.fast = p.id;
+      });
       await refreshAgentCards();
       await loadPendingApprovals();
       // Advance simulated settlement + webhook delivery periodically.
       setInterval(() => {
-        fetch('/simulate/tick', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } }).catch(() => {});
+        fetchWithAuth('/simulate/tick', { method: 'POST' }).catch(() => {});
       }, 750);
     } catch (e) {
       console.error('Init failed', e);
@@ -805,11 +845,19 @@
     clearTrace();
     document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
     try {
-      const res = await fetch('/demo/reset', { method: 'POST', headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/demo/reset', { method: 'POST' });
       const data = await res.json();
-      walletIds = data.wallets;
+      walletIds = { procurement: data.wallets.procurement.id, research: data.wallets.research.id };
       walletKeys = data.wallet_keys || {};
-      productIds = data.products;
+      productIds = {};
+      (data.products || []).forEach(p => {
+        if (p.vendor_name === 'packright.com') productIds.small = p.id;
+        if (p.vendor_name === 'arxiv-reports') productIds.medium = p.id;
+        if (p.vendor_name === 'cloudsoft.io') productIds.large = p.id;
+        if (p.vendor_name === 'exfil-data.io') productIds.restricted = p.id;
+        if (p.vendor_name === 'shipthat.com') productIds.bulk = p.id;
+        if (p.vendor_name === 'cloud-provider.com') productIds.fast = p.id;
+      });
       await refreshAgentCards();
       await loadPendingApprovals();
     } catch (e) {
@@ -819,7 +867,7 @@
 
   async function loadPendingApprovals() {
     try {
-      const res = await fetch('/approvals?status=pending', { headers: { 'X-Admin-Key': ADMIN_KEY } });
+      const res = await fetchWithAuth('/approvals?status=pending', {});
       if (!res.ok) return;
       const items = await res.json();
       // Only show approvals for demo wallets
@@ -834,8 +882,8 @@
     if (!walletIds.procurement || !walletIds.research) return;
     try {
       const [pw, rw] = await Promise.all([
-        fetch('/wallets/' + walletIds.procurement, { headers: { 'X-Admin-Key': ADMIN_KEY } }).then(r => r.json()),
-        fetch('/wallets/' + walletIds.research, { headers: { 'X-Admin-Key': ADMIN_KEY } }).then(r => r.json()),
+        fetchWithAuth('/wallets/' + walletIds.procurement, {}).then(r => r.json()),
+        fetchWithAuth('/wallets/' + walletIds.research, {}).then(r => r.json()),
       ]);
       renderCard('proc', pw);
       renderCard('res', rw);
@@ -946,7 +994,8 @@
       return null;
     }
 
-    const body = { wallet_id: walletId, product_id: productId, quantity: 1, intent };
+    // Wallet is inferred from X-Wallet-Key (wallet_id is intentionally omitted).
+    const body = { product_id: productId, quantity: 1, intent };
 
     logRequest('POST', '/purchase', body);
 
@@ -1067,11 +1116,7 @@
     const path = '/approvals/' + id + '/approve';
     logRequest('POST', path, {});
     try {
-      const res = await fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
-        body: JSON.stringify({}),
-      });
+      const res = await fetchWithAuth(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       const status = res.status;
       const body = await res.json().catch(() => ({}));
       logResponse('POST', path, status, 0, body);
@@ -1086,11 +1131,7 @@
     const path = '/approvals/' + id + '/reject';
     logRequest('POST', path, {});
     try {
-      const res = await fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': ADMIN_KEY },
-        body: JSON.stringify({}),
-      });
+      const res = await fetchWithAuth(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       const status = res.status;
       const body = await res.json().catch(() => ({}));
       logResponse('POST', path, status, 0, body);

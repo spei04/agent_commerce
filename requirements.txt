@@ -3,3 +3,9 @@ uvicorn[standard]
 sqlalchemy
 pydantic
 requests
+alembic
+psycopg2-binary
+passlib[bcrypt]
+PyJWT
+pytest
+httpx
